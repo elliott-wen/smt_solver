@@ -213,7 +213,6 @@ def normalize_llvm_type(ty: str) -> str:
     raise ValueError(f"Unknown type {ty}")
 
 def extract_llvm_param_types(signature: str):
-    print(signature)
     """
     Extract normalized parameter types from an LLVM signature string.
     """

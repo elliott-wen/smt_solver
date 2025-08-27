@@ -21,23 +21,23 @@ class TensorModel:
         self.TensorSort = DeclareSort("Tensor")
 
         # Tensor property functions
-        self.Dim = Function("dim", self.ArgSort, IntSort())
-        self.ElementSize = Function("element_size", self.ArgSort, IntSort())
-        self.Size = Function("size", self.ArgSort, IntSort(), IntSort())
-        self.Sizes = Function("sizes", self.ArgSort, self.IntVector)
-        self.Stride = Function("stride", self.ArgSort, IntSort(), IntSort())
-        self.Strides = Function("strides", self.ArgSort, self.IntVector)
-        self.Numel = Function("numel", self.ArgSort, IntSort())
-        self.DType = Function("dtype", self.ArgSort, IntSort())
-        self.IsContiguous = Function("is_contiguous", self.ArgSort, BoolSort())
-        self.DeviceOf = Function("device_of", self.ArgSort, self.DeviceSort)
-        self.LayoutOf = Function("layout_of", self.ArgSort, IntSort())
-        self.IsConj = Function("is_conj", self.ArgSort, BoolSort())
-        self.IsComplex = Function("is_complex", self.ArgSort, BoolSort())
-        self.IsZeroTensor = Function("is_zerotensor", self.ArgSort, BoolSort())
-        self.RequiresGrad = Function("requires_grad", self.ArgSort, BoolSort())
-        self.IsSparse = Function("is_sparse", self.ArgSort, BoolSort())
-        self.IsNested = Function("is_nested", self.ArgSort, BoolSort())
+        self.Dim = Function("dim", self.TensorSort, IntSort())
+        self.ElementSize = Function("element_size", self.TensorSort, IntSort())
+        self.Size = Function("size", self.TensorSort, IntSort(), IntSort())
+        self.Sizes = Function("sizes", self.TensorSort, self.IntVector)
+        self.Stride = Function("stride", self.TensorSort, IntSort(), IntSort())
+        self.Strides = Function("strides", self.TensorSort, self.IntVector)
+        self.Numel = Function("numel", self.TensorSort, IntSort())
+        self.DType = Function("dtype", self.TensorSort, IntSort())
+        self.IsContiguous = Function("is_contiguous", self.TensorSort, BoolSort())
+        self.DeviceOf = Function("device_of", self.TensorSort, self.DeviceSort)
+        self.LayoutOf = Function("layout_of", self.TensorSort, IntSort())
+        self.IsConj = Function("is_conj", self.TensorSort, BoolSort())
+        self.IsComplex = Function("is_complex", self.TensorSort, BoolSort())
+        self.IsZeroTensor = Function("is_zerotensor", self.TensorSort, BoolSort())
+        # self.RequiresGrad = Function("requires_grad", self.TensorSort, BoolSort())
+        self.IsSparse = Function("is_sparse", self.TensorSort, BoolSort())
+        self.IsNested = Function("is_nested", self.TensorSort, BoolSort())
 
         self.argument_map = argument_map
 
@@ -47,9 +47,9 @@ class TensorModel:
             if arg_info == "Tensor":
                 self._arg_tensors[idx] = Const(f"tensor_arg_{idx}", self.TensorSort)
             elif arg_info == "int":
-                self._arg_tensors[idx] = Const(f"tensor_int_{idx}", IntSort)
+                self._arg_tensors[idx] = Const(f"int_arg_{idx}", IntSort)
             elif arg_info == "int[]":
-                self._arg_tensors[idx] = Const(f"tensor_intarray_{idx}", self.IntVector)
+                self._arg_tensors[idx] = Const(f"intarray_arg_{idx}", self.IntVector)
             else:
                 raise ValueError(f"Unhandled argument type {arg_info}")
         return self._arg_tensors[idx]
@@ -288,15 +288,20 @@ def main(input_file):
 
     solver_builder = SolverBuilder(model, mapper)
     solvers = solver_builder.build_solvers_from_data(data)
+    print(llvm_name)
+
+    for idx, s in enumerate(solvers):
+        print(idx, s.assertions())
+
     fault_paths = [And(s.assertions()) for s in solvers]
 
     safe_formula = Not(Or(fault_paths))
     s_neg = Solver()
     s_neg.add(safe_formula)
 
-    # Example domain constraints
-    x = Int("x")
-    s_neg.add(ForAll(x, Or([model.ElementSize(x) == v for v in [1, 2, 4, 6, 16]])))
+    # # Example domain constraints
+    # x = Int("x")
+    # s_neg.add(ForAll(x, Or([model.ElementSize(x) == v for v in [1, 2, 4, 6, 16]])))
 
     res = s_neg.check()
     if res == sat:
@@ -306,4 +311,4 @@ def main(input_file):
 
 
 if __name__ == "__main__":
-    main("extracted_smt/_ZN2at6native4rollERKNS_6TensorEN3c108ArrayRefIlEES6_.json")
+    main("extracted_smt/_ZN2at6native3maxERKNS_6TensorE.json")
