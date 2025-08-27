@@ -1,462 +1,309 @@
 import json
-from z3 import EnumSort, IntSort, SeqSort, BoolSort, Int, IntVal, RealVal, BoolVal, BoolRef, ArithRef, Function, Length, \
-    If, Xor, Or, And, Not, Solver, sat, Empty, Concat, Unit, ForAll
 import re
+from param_parser import extract_llvm_param_types
+from z3 import *
+
 from json_dump import print_paths
-import pickle
-
-# Arg: a tensor handle/id. We use IntSort and keep stable ids per argument index
-
-ArgSort = IntSort()
-ArgVector = SeqSort(ArgSort)
-
-# Define a vector as an array Int -> Int
-IntVector = SeqSort(IntSort())
-
-DeviceSort, (kCPU) = EnumSort('Device', ['CPU'])
-
-# Tensor property functions
-Dim = Function('dim', ArgSort, IntSort())  # rank
-
-ElementSize = Function('element_size', ArgSort, IntSort())
-
-Size = Function('size', ArgSort, IntSort(), IntSort()
-                )  # (t, d) -> size[d]
-Sizes = Function('size', ArgSort, IntVector
-                 )  # t -> sizes
-
-Stride = Function('stride', ArgSort, IntSort(), IntSort()
-                  )  # (t,d) -> stride
-Strides = Function('strides', ArgSort, IntVector
-                   )  # t -> strides
-
-Numel = Function('numel', ArgSort, IntSort())
-# (t) -> dtype
-
-DType = Function('dtype', ArgSort, IntSort())
-
-IsContiguous = Function('is_contiguous', ArgSort,
-                        BoolSort())  # (t) -> Bool
-# (t) -> Device
-DeviceOf = Function('device_of', ArgSort, DeviceSort)
-LayoutOf = Function('layout_of', ArgSort, IntSort())
-IsConj = Function('is_conj', ArgSort,
-                  BoolSort())
-IsComplex = Function('is_complex', ArgSort, BoolSort())
-IsZeroTensor = Function('is_zerotensor', ArgSort, BoolSort())
-
-# Optional extras you might want
-RequiresGrad = Function('requires_grad', ArgSort, BoolSort())
-IsSparse = Function('is_sparse', ArgSort, BoolSort())
-IsNested = Function('is_nested', ArgSort, BoolSort())
-
-# ----------------------------
-# Helpers: symbol tables / naming
-# ----------------------------
-
-
-_arg_tensors = {}  # arg index -> IntVal(handle)
-
-
-def get_arg_tensor(idx: int):
-    """Return a stable ArgSort id (IntVal) for the given argument index."""
-    if idx not in _arg_tensors:
-        _arg_tensors[idx] = Int(f"arg{idx}")
-    return _arg_tensors[idx]
-
-
-def sanitize(s: str) -> str:
-    return re.sub(r'[^a-zA-Z0-9_]', '_', s)
 
 
 # ----------------------------
-# ICmp predicate mapping (LLVM CmpInst::Predicate)
-# We use Int comparisons for both signed/unsigned here.
-# 32 eq, 33 ne, 34 ugt, 35 uge, 36 ult, 37 ule, 38 sgt, 39 sge, 40 slt, 41 sle
+# Tensor symbolic model
 # ----------------------------
-
-
-def icmp_apply(pred: int, lhs, rhs):
-    if pred == 32:  # eq
-        return lhs == rhs
-    if pred == 33:  # ne
-        return lhs != rhs
-    if pred == 34:  # ugt
-        return lhs > rhs
-    if pred == 35:  # uge
-        return lhs >= rhs
-    if pred == 36:  # ult
-        return lhs < rhs
-    if pred == 37:  # ule
-        return lhs <= rhs
-    if pred == 38:  # sgt
-        return lhs > rhs
-    if pred == 39:  # sge
-        return lhs >= rhs
-    if pred == 40:  # slt
-        return lhs < rhs
-    if pred == 41:  # sle
-        return lhs <= rhs
-    raise ValueError(f"Unknown icmp predicate: {pred}")
-
-
-def call_apply(fn_name, ops):
-    if fn_name == "_ZNK3c106Device6is_cpuEv":
-        return BoolVal(True)
-
-    # Don't know how to keep track of vector
-    if fn_name == "_ZN9__gnu_cxxneIPN2at6TensorESt6vectorIS2_SaIS2_EEEEbRKNS_17__normal_iteratorIT_T0_EESC_":
-        return BoolVal(True)
-
-    # Shortcut it
-    if fn_name == "_ZNK3c108ArrayRefIlE3vecEv":
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNKSt6vectorIlSaIlEE4sizeEv":
-        return Length(build_expr(ops[0]))
-
-    if fn_name == "_ZNK3c108ArrayRefIlE4sizeEv":
-        return Length(build_expr(ops[0]))
-
-    if fn_name == "_ZNK3c106DeviceeqERKS0_":
-        # Shortcut, they should always equal in our fuzzer
-        return build_expr(ops[0]) == build_expr(ops[1])
-
-    if fn_name == "_ZN3c10eqEN6caffe28TypeMetaENS_10ScalarTypeE":
-        return build_expr(ops[0]) == build_expr(ops[1])
-
-    if fn_name == "_ZN6detail11scalar_typeEN3c1010ScalarTypeE":
-        # This function is useless? it just return scalartype anyway?
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNK2at10TensorBase5numelEv":
-        return Numel(build_expr(ops[0]))
-
-    if fn_name == "_ZN2at6TensorC2ERKS0_":
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNR2at6TensoraSERKS0_":
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNK2at6Tensor10contiguousEN3c1012MemoryFormatE":
-        print("Not implemented yet", fn_name)
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNK2at6Tensor4conjEv":
-        print("Not implemented yet", fn_name)
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNK2at10TensorBase3dimEv":
-        return Dim(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase11scalar_typeEv":
-        return DType(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase5dtypeEv":
-        return DType(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at18TensorIteratorBase5dtypeEl":
-        # If the immediate ops is build, i can handle it so far
-        some_sort_array = build_expr(ops[0])
-        some_index = build_expr(ops[1])
-        return DType(some_sort_array[some_index])
-
-    if fn_name == "_ZN2at20TensorIteratorConfig5buildEv": # Pass through
-        return build_expr(ops[0])
-
-    if fn_name == "_ZN2at20TensorIteratorConfig15add_const_inputERKNS_10TensorBaseE":
-        return Concat(build_expr(ops[0]), Unit(build_expr(ops[1])))
-
-    if fn_name == "_ZN2at20TensorIteratorConfig10add_outputERKNS_10TensorBaseE":
-        return Concat(build_expr(ops[0]), Unit(build_expr(ops[1])))
-
-    if fn_name == "_ZN2at20TensorIteratorConfig20check_all_same_dtypeEb": # Pass through
-        return build_expr(ops[0])
-
-    if fn_name == "_ZN2at20TensorIteratorConfig21set_check_mem_overlapEb":
-        return build_expr(ops[0])
-
-    if fn_name == "_ZN2at20TensorIteratorConfigC2Ev":
-        return Empty(ArgVector)
-
-    if fn_name == "_ZNK2at10TensorBase7is_conjEv":
-        return IsConj(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase9is_nestedEv":
-        return IsNested(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase10is_complexEv":
-        return IsComplex(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase14_is_zerotensorEv":
-        return IsZeroTensor(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase6deviceEv":
-        return DeviceOf(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase6layoutEv":
-        return LayoutOf(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase7stridesEv":
-        return Strides(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase6strideEl":
-        return Stride(build_expr(ops[0]), build_expr(ops[1]))
-
-    if fn_name == "_ZNK2at10TensorBase5sizesEv":
-        return Sizes(build_expr(ops[0]))
-
-    if fn_name == "_ZNK2at10TensorBase4sizeEl":
-        return Size(build_expr(ops[0]), build_expr(ops[1]))
-
-    # Handle range here
-    if fn_name == "_ZN3c106irangeIiiTnNSt9enable_ifIXsr3stdE13is_integral_vIT_EEbE4typeELb1ETnNS1_IXsr3stdE13is_integral_vIT0_EEbE4typeELb1EEENS_13integer_rangeIS5_Lb0ELb1EEES2_S5_":
-        seq_expr = Empty(IntVector)
-        for v in range(build_expr(ops[0]).as_long(), build_expr(ops[1]).as_long()):
-            seq_expr = Concat(seq_expr, Unit(IntVal(v)))
-
-        return seq_expr
-
-    if fn_name == "_ZN3c106irangeIiTnNSt9enable_ifIXsr3stdE13is_integral_vIT_EEbE4typeELb1EEENS_13integer_rangeIS2_Lb1ELb1EEES2_":
-        seq_expr = Empty(IntVector)
-        for v in range(build_expr(ops[0]).as_long()):
-            seq_expr = Concat(seq_expr, Unit(IntVal(v)))
-        return seq_expr
-
-    if fn_name == "_ZNK3c1013integer_rangeIiLb0ELb1EE5beginEv" or fn_name == "_ZNK3c1013integer_rangeIiLb1ELb1EE5beginEv":
-        return build_expr(ops[0])[0]  # build_expr(ops[0]) expects to be a seq
-
-    if fn_name == "_ZNK3c106detail16integer_iteratorIiLb0ELi0EEdeEv" or fn_name == "_ZNK3c106detail16integer_iteratorIiLb1ELi0EEdeEv":
-        # Degrade to direct access
-        return build_expr(ops[0])
-
-    if fn_name == "_ZNK3c108ArrayRefIlEixEm":
-        some_sort_array = build_expr(ops[0])
-        some_index = build_expr(ops[1])
-        return some_sort_array[some_index]
-
-    if fn_name == "_ZNK2at10TensorBase12element_sizeEv":
-        sym_input = build_expr(ops[0])
-        return ElementSize(sym_input)
-
-    if fn_name == "_ZN3c10eqIlEEbNS_8ArrayRefIT_EES3_":
-        in1 = build_expr(ops[0])
-        in2 = build_expr(ops[1])
-        return in1 == in2
-
-    raise NotImplementedError(f"Unhandled call: {fn_name}")
-
-
-# ----------------------------
-# Expression builder (from your JSON nodes)
-# Each node has shape: {"inst": "...", "ops": [...]} or leaves with "const"
-# ----------------------------
-
-
-def build_expr(node):
-    if not isinstance(node, dict):
-        raise ValueError(f"Bad node (expected dict): {node}")
-
-    inst = node.get("inst", "").lower()
-    ops = node.get("ops", [])
-
-    if inst == "const_int":
-        cval = node.get("const")
-        return IntVal(int(cval))
-    if inst == "const_fp":
-        cval = node.get("const")
-        # Use Real for FP constants (simplified)
-        return RealVal(str(cval))
-    if inst == "const_arg":
-        cval = node.get("const")
-        return get_arg_tensor(int(cval))
-    if inst == "const_global":
-        cval = node.get("const")
-        # Only used as callee inside "call"; standalone -> treat as a symbolic Int
-        return Int(sanitize(str(cval)))
-
-    if inst == "load":
-        # passthrough the pointee expr
-        return build_expr(ops[0])
-
-    if inst == "store":
-        # passthrough the pointer expr
-        return build_expr(ops[0])
-
-    if inst == "call":
-        # ops[0] must be const_global with function name; remaining are arguments
-        if not ops or ops[0].get("inst") != "const_global":
-            raise ValueError(f"call without const_global callee: {node}")
-        fn_name = ops[0]["const"]
-
-        return call_apply(fn_name, ops[1:])
-
-    if inst == "icmp":
-        # ops[0]: predicate const_int; ops[1]: lhs; ops[2]: rhs
-        if len(ops) != 3 or ops[0].get("inst") != "const_int":
-            raise ValueError(f"icmp malformed: {node}")
-        pred = int(ops[0]["const"])
-        lhs = build_expr(ops[1])
-        rhs = build_expr(ops[2])
-        return icmp_apply(pred, lhs, rhs)
-
-    if inst == "select":
-        # ops: condition, trueVal, falseVal
-        cond = build_expr(ops[0])
-        tval = build_expr(ops[1])
-        fval = build_expr(ops[2])
-        return If(cond, tval, fval)
-
-    # Arithmetic / bitwise (simplified to Int arithmetic/bitwise)
-    if inst in ("add", "fadd"):
-        return build_expr(ops[0]) + build_expr(ops[1])
-    if inst in ("sub", "fsub"):
-        return build_expr(ops[0]) - build_expr(ops[1])
-    if inst in ("mul", "fmul"):
-        return build_expr(ops[0]) * build_expr(ops[1])
-    if inst in ("sdiv", "udiv", "fdiv", "div"):
-        return build_expr(ops[0]) / build_expr(ops[1])
-    if inst == "and":
-        a, b = build_expr(ops[0]), build_expr(ops[1])
-        if isinstance(a, BoolRef) and isinstance(b, BoolRef):
-            return And(a, b)
-        raise NotImplementedError("bitwise and on int not implemented here.")
-    if inst == "or":
-        a, b = build_expr(ops[0]), build_expr(ops[1])
-        if isinstance(a, BoolRef) and isinstance(b, BoolRef):
-            return Or(a, b)
-        raise NotImplementedError("bitwise or on int not implemented here.")
-    if inst == "xor":
-        a, b = build_expr(ops[0]), build_expr(ops[1])
-        if isinstance(a, BoolRef) and isinstance(b, BoolRef):
-            return Xor(a, b)
-        raise NotImplementedError("bitwise xor on int not implemented here.")
-    if inst in ("shl", "lshr", "ashr"):
-        raise NotImplementedError(
-            "shifts not implemented in this int-based model.")
-
-    # Casts (pass-through, since we're using untyped Int/Real/Bools)
-    if inst in ("trunc", "sext", "zext", "fptosi", "ptrtoint",
-                "sitofp", "inttoptr", "fpext", "uitofp"):
-        return build_expr(ops[0])
-
-    raise NotImplementedError(f"Unhandled instruction: {inst}")
-
-
-# ----------------------------
-# Build solvers per path
-# ----------------------------
-
-
-def contains_const_arg(cond):
-    """Recursively check if cond or any of its ops contains a const_arg."""
-    if not isinstance(cond, dict):
-        return False
-
-    # we can shortcut the error
-    if cond.get("error", None) is not None:
-        raise ValueError("Error detected in op tree")
-
-    if cond.get("inst") == "const_arg":
-        return True
-
-    for op in cond.get("ops", []):
-        if contains_const_arg(op):
-            return True
-
-    return False
-
-
-def build_solvers_from_data(data):
-    solvers = []
-
-    for path_idx, path in enumerate(data.get("paths", []), 1):
-        s = Solver()
-
-        path_details = path["detail"]
-        for step_idx, step in enumerate(reversed(path_details), 1):
-            cond = step.get("condition")
-            if cond is None:
-                continue
-
-            # Todo we need to shortcut some call
-            if not contains_const_arg(cond):
-                continue
-
-            is_switch = step.get("isSwitch", False)
-            taken = step.get("taken", None)
-            excluded = step.get("excludedCases", [])
-
-            if not is_switch:
-                # normal branch
-                cond_expr = build_expr(cond)
-                if isinstance(cond_expr, BoolRef):
-                    # print("br:", cond_expr)
-                    s.add(cond_expr if taken == 1 else Not(cond_expr))
-                elif isinstance(cond_expr, ArithRef):
-                    # Interpret nonzero as True
-                    if taken:
-                        augmented_cond_expr = cond_expr != 0  # taken branch means condition is True
-                    else:
-                        # not taken branch means condition is False
-                        augmented_cond_expr = cond_expr == 0
-
-                    # print("br (int as bool):", augmented_cond_expr)
-                    s.add(augmented_cond_expr)
+class TensorModel:
+    def __init__(self, argument_map):
+        self._arg_tensors = {}
+
+        # Define sorts
+        self.ArgSort = IntSort()
+        self.ArgVector = SeqSort(self.ArgSort)
+        self.IntVector = SeqSort(IntSort())
+        self.DeviceSort, (self.kCPU,) = EnumSort("Device", ["CPU"])
+        self.TensorSort = DeclareSort("Tensor")
+
+        # Tensor property functions
+        self.Dim = Function("dim", self.ArgSort, IntSort())
+        self.ElementSize = Function("element_size", self.ArgSort, IntSort())
+        self.Size = Function("size", self.ArgSort, IntSort(), IntSort())
+        self.Sizes = Function("sizes", self.ArgSort, self.IntVector)
+        self.Stride = Function("stride", self.ArgSort, IntSort(), IntSort())
+        self.Strides = Function("strides", self.ArgSort, self.IntVector)
+        self.Numel = Function("numel", self.ArgSort, IntSort())
+        self.DType = Function("dtype", self.ArgSort, IntSort())
+        self.IsContiguous = Function("is_contiguous", self.ArgSort, BoolSort())
+        self.DeviceOf = Function("device_of", self.ArgSort, self.DeviceSort)
+        self.LayoutOf = Function("layout_of", self.ArgSort, IntSort())
+        self.IsConj = Function("is_conj", self.ArgSort, BoolSort())
+        self.IsComplex = Function("is_complex", self.ArgSort, BoolSort())
+        self.IsZeroTensor = Function("is_zerotensor", self.ArgSort, BoolSort())
+        self.RequiresGrad = Function("requires_grad", self.ArgSort, BoolSort())
+        self.IsSparse = Function("is_sparse", self.ArgSort, BoolSort())
+        self.IsNested = Function("is_nested", self.ArgSort, BoolSort())
+
+        self.argument_map = argument_map
+
+    def get_arg_tensor(self, idx: int):
+        if idx not in self._arg_tensors:
+            arg_info = self.argument_map[idx]
+            if arg_info == "Tensor":
+                self._arg_tensors[idx] = Const(f"tensor_arg_{idx}", self.TensorSort)
+            elif arg_info == "int":
+                self._arg_tensors[idx] = Const(f"tensor_int_{idx}", IntSort)
+            elif arg_info == "int[]":
+                self._arg_tensors[idx] = Const(f"tensor_intarray_{idx}", self.IntVector)
             else:
-                # switch handling
-                # switch condition is an Int/BitVec
-                cond_expr = build_expr(cond)
-                # print("switch:", cond_expr)
-                if excluded:
-                    # Default branch: not equal to any of excludedCases
-                    s.add(And([cond_expr != IntVal(v) for v in excluded]))
-                else:
-                    # Normal case branch
-                    s.add(cond_expr == taken)
+                raise ValueError(f"Unhandled argument type {arg_info}")
+        return self._arg_tensors[idx]
 
-        solvers.append(s)
-    return solvers
+    @staticmethod
+    def sanitize(name: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9_]", "_", name)
+
 
 # ----------------------------
-# Example run (assumes `data` is already loaded with your JSON)
+# LLVM ICmp mapper
 # ----------------------------
-if __name__ == "__main__":
-    with open(
-            "extracted_smt/_ZN2at6native4rollERKNS_6TensorEN3c108ArrayRefIlEES6_.json") as fp:
+class ICmpMapper:
+    @staticmethod
+    def apply(pred: int, lhs, rhs):
+        mapping = {
+            32: lhs == rhs, 33: lhs != rhs,
+            34: lhs > rhs, 35: lhs >= rhs,
+            36: lhs < rhs, 37: lhs <= rhs,
+            38: lhs > rhs, 39: lhs >= rhs,
+            40: lhs < rhs, 41: lhs <= rhs,
+        }
+        if pred not in mapping:
+            raise ValueError(f"Unknown icmp predicate: {pred}")
+        return mapping[pred]
+
+
+# ----------------------------
+# Function mapping (merged call_apply)
+# ----------------------------
+class FunctionMapper:
+    def __init__(self, model: TensorModel):
+        self.model = model
+
+    def apply(self, fn_name: str, ops):
+        bm = self.model
+
+        # ---- Direct paste of your call_apply cases ----
+
+        if fn_name == "_ZNK3c106Device6is_cpuEv":
+            return BoolVal(True)
+
+        if fn_name == "_ZN9__gnu_cxxneIPN2at6TensorESt6vectorIS2_SaIS2_EEEEbRKNS_17__normal_iteratorIT_T0_EESC_":
+            return BoolVal(True)
+
+        if fn_name == "_ZNK3c108ArrayRefIlE3vecEv":
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZNK3c108ArrayRefIlE5emptyEv":
+            return Length(self.build_expr(ops[0])) == 0
+
+        if fn_name in ("_ZNKSt6vectorIlSaIlEE4sizeEv", "_ZNK3c108ArrayRefIlE4sizeEv"):
+            return Length(self.build_expr(ops[0]))
+
+        if fn_name == "_ZNK3c106DeviceeqERKS0_":
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
+
+        if fn_name == "_ZN3c10eqEN6caffe28TypeMetaENS_10ScalarTypeE":
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
+
+        if fn_name == "_ZN6detail11scalar_typeEN3c1010ScalarTypeE":
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZNK2at10TensorBase5numelEv":
+            return bm.Numel(self.build_expr(ops[0]))
+
+        if fn_name in ("_ZN2at6TensorC2ERKS0_", "_ZNR2at6TensoraSERKS0_"):
+            return self.build_expr(ops[0])
+
+        if fn_name in ("_ZNK2at6Tensor10contiguousEN3c1012MemoryFormatE",
+                       "_ZNK2at6Tensor4conjEv"):
+            print("Not implemented yet", fn_name)
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZNK2at10TensorBase3dimEv":
+            return bm.Dim(self.build_expr(ops[0]))
+
+        if fn_name in ("_ZNK2at10TensorBase11scalar_typeEv", "_ZNK2at10TensorBase5dtypeEv"):
+            return bm.DType(self.build_expr(ops[0]))
+
+        if fn_name == "_ZNK2at18TensorIteratorBase5dtypeEl":
+            arr, idx = self.build_expr(ops[0]), self.build_expr(ops[1])
+            return bm.DType(arr[idx])
+
+        if fn_name == "_ZN2at20TensorIteratorConfig5buildEv":
+            return self.build_expr(ops[0])
+
+        if fn_name in ("_ZN2at20TensorIteratorConfig15add_const_inputERKNS_10TensorBaseE",
+                       "_ZN2at20TensorIteratorConfig10add_outputERKNS_10TensorBaseE"):
+            return Concat(self.build_expr(ops[0]), Unit(self.build_expr(ops[1])))
+
+        if fn_name in ("_ZN2at20TensorIteratorConfig20check_all_same_dtypeEb",
+                       "_ZN2at20TensorIteratorConfig21set_check_mem_overlapEb"):
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZN2at20TensorIteratorConfigC2Ev":
+            return Empty(bm.ArgVector)
+
+        if fn_name == "_ZNK2at10TensorBase7is_conjEv":
+            return bm.IsConj(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase9is_nestedEv":
+            return bm.IsNested(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase10is_complexEv":
+            return bm.IsComplex(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase14_is_zerotensorEv":
+            return bm.IsZeroTensor(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase6deviceEv":
+            return bm.DeviceOf(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase6layoutEv":
+            return bm.LayoutOf(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase7stridesEv":
+            return bm.Strides(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase6strideEl":
+            return bm.Stride(self.build_expr(ops[0]), self.build_expr(ops[1]))
+        if fn_name == "_ZNK2at10TensorBase5sizesEv":
+            return bm.Sizes(self.build_expr(ops[0]))
+        if fn_name == "_ZNK2at10TensorBase4sizeEl":
+            return bm.Size(self.build_expr(ops[0]), self.build_expr(ops[1]))
+
+        # irange handling
+        if fn_name.startswith("_ZN3c106irange"):
+            start = self.build_expr(ops[0]).as_long()
+            end = self.build_expr(ops[1]).as_long() if len(ops) > 1 else start
+            seq_expr = Empty(bm.IntVector)
+            for v in range(start, end):
+                seq_expr = Concat(seq_expr, Unit(IntVal(v)))
+            return seq_expr
+
+        if fn_name.startswith("_ZNK3c1013integer_range") and "beginEv" in fn_name:
+            return self.build_expr(ops[0])[0]
+
+        if fn_name.startswith("_ZNK3c106detail16integer_iterator") and "deEv" in fn_name:
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZNK3c108ArrayRefIlEixEm":
+            arr, idx = self.build_expr(ops[0]), self.build_expr(ops[1])
+            return arr[idx]
+
+        if fn_name == "_ZNK2at10TensorBase12element_sizeEv":
+            return bm.ElementSize(self.build_expr(ops[0]))
+
+        if fn_name == "_ZN3c10eqIlEEbNS_8ArrayRefIT_EES3_":
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
+
+        raise NotImplementedError(f"Unhandled call: {fn_name}")
+
+    # ----------------------------
+    # Expression builder
+    # ----------------------------
+    def build_expr(self, node):
+        inst = node.get("inst")
+        ops = node.get("ops", [])
+
+        if inst == "const_int":
+            return IntVal(int(node["const"]))
+        if inst == "const_arg":
+            return self.model.get_arg_tensor(int(node["const"]))
+        if inst == "const_global":
+            return Int(self.model.sanitize(str(node["const"])))
+        if inst in ("load", "store"):
+            return self.build_expr(ops[0])
+        if inst == "call":
+            fn_name = ops[0]["const"]
+            return self.apply(fn_name, ops[1:])
+        if inst == "icmp":
+            pred = int(ops[0]["const"])
+            lhs, rhs = self.build_expr(ops[1]), self.build_expr(ops[2])
+            return ICmpMapper.apply(pred, lhs, rhs)
+        if inst == "select":
+            cond, tval, fval = map(self.build_expr, ops)
+            return If(cond, tval, fval)
+        if inst in ("add", "fadd"):
+            return self.build_expr(ops[0]) + self.build_expr(ops[1])
+        if inst in ("sub", "fsub"):
+            return self.build_expr(ops[0]) - self.build_expr(ops[1])
+        if inst in ("mul", "fmul"):
+            return self.build_expr(ops[0]) * self.build_expr(ops[1])
+        if inst in ("sdiv", "udiv", "fdiv", "div"):
+            return self.build_expr(ops[0]) / self.build_expr(ops[1])
+        if inst in ("trunc", "sext", "zext", "fptosi", "ptrtoint",
+                    "sitofp", "inttoptr", "fpext", "uitofp"):
+            return self.build_expr(ops[0])
+
+        raise NotImplementedError(f"Unhandled instruction: {inst}")
+
+
+# ----------------------------
+# Solver builder
+# ----------------------------
+class SolverBuilder:
+    def __init__(self, model: TensorModel, mapper: FunctionMapper):
+        self.model = model
+        self.mapper = mapper
+
+    def contains_const_arg(self, cond):
+        if not isinstance(cond, dict):
+            return False
+        if cond.get("inst") == "const_arg":
+            return True
+        return any(self.contains_const_arg(op) for op in cond.get("ops", []))
+
+    def build_solvers_from_data(self, data):
+        solvers = []
+        for path in data.get("paths", []):
+            s = Solver()
+            for step in reversed(path.get("detail", [])):
+                cond = step.get("condition")
+                if cond is None or not self.contains_const_arg(cond):
+                    continue
+                expr = self.mapper.build_expr(cond)
+                if isinstance(expr, BoolRef):
+                    s.add(expr if step.get("taken") else Not(expr))
+                elif isinstance(expr, ArithRef):
+                    taken = step.get("taken")
+                    s.add(expr != 0 if taken else expr == 0)
+            solvers.append(s)
+        return solvers
+
+
+# ----------------------------
+# Main
+# ----------------------------
+def main(input_file):
+    with open(input_file) as fp:
         data = json.load(fp)
-    # with open("extracted_smt/_ZN2at6native4put_ERNS_6TensorERKS1_S4_b.txt") as fp:
-    #     data = json.load(fp)
     print_paths(data)
 
-    with open("mapping.pickle", "rb") as f:
-        param_mapping = pickle.load(f)
+    llvm_name = data['paths'][0]['funcInfo']['llvm_name']
+    llvm_params = data['paths'][0]['funcInfo']['llvm_params']
+    argument_map = extract_llvm_param_types(llvm_name)
+    if "sret_" in llvm_params[0]:
+        argument_map.insert(0, "Tensor")
 
-    llvm_name = data['paths'][0]["funcInfo"]['ori_name']
-    param_info = param_mapping[llvm_name]
+    model = TensorModel(argument_map)
+    mapper = FunctionMapper(model)
 
-    # Build each fault path independently
-    solvers = build_solvers_from_data(data)
-    fault_paths = []
-    for i, s in enumerate(solvers, 1):
-        print(f"\nPath {i} that leads to fault:")
-        doom_path_constraints = s.assertions()
-        for constraint in doom_path_constraints:
-            print(constraint)
+    solver_builder = SolverBuilder(model, mapper)
+    solvers = solver_builder.build_solvers_from_data(data)
+    fault_paths = [And(s.assertions()) for s in solvers]
 
-        fault_paths.append(And(list(doom_path_constraints)))
-
-    # Not A and Not B
     safe_formula = Not(Or(fault_paths))
     s_neg = Solver()
     s_neg.add(safe_formula)
 
-    # Constraint known function
-    x = Int('x')  # dummy variable for ForAll
-    s_neg.add(ForAll(x, Or([ElementSize(x) == v for v in [1, 2, 4, 6, 16]])))
+    # Example domain constraints
+    x = Int("x")
+    s_neg.add(ForAll(x, Or([model.ElementSize(x) == v for v in [1, 2, 4, 6, 16]])))
 
     res = s_neg.check()
     if res == sat:
-        print("===> Inputs that avoid fault:", s_neg.model())
+        print("Inputs that avoid fault:", s_neg.model())
     else:
-        print("No way to avoid fault (path always triggers it).")
+        print("No way to avoid fault.")
+
+
+if __name__ == "__main__":
+    main("extracted_smt/_ZN2at6native4rollERKNS_6TensorEN3c108ArrayRefIlEES6_.json")
