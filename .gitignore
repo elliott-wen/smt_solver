@@ -1,0 +1,4 @@
+debug/*
+extracted_smt/*
+mapping.pickle
+.venv/*
