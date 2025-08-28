@@ -23,6 +23,7 @@ def print_paths(data):
         print(f"Path {path_idx}:")
         for step_idx, step in enumerate(reversed(path_detail), 1):
             cond = step.get("condition")
+
             print(
                 f"  Step {step_idx} (isSwitch={step['isSwitch']}, taken={step['taken']}):")
             if cond:
