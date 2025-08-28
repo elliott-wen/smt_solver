@@ -4,3 +4,4 @@ mapping.pickle
 .venv/*
 venv/*
 *.tar
+__pycache__/*
