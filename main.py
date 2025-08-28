@@ -2,9 +2,8 @@ import json
 import re
 from param_parser import extract_llvm_param_types
 from z3 import *
-
+import logging
 from json_dump import print_paths
-
 
 # ----------------------------
 # Tensor symbolic model
@@ -12,6 +11,7 @@ from json_dump import print_paths
 class TensorModel:
     def __init__(self, argument_map):
         self._arg_tensors = {}
+        self.constraints = []  # store all tensor-related constraints
 
         # Define sorts
         self.ArgSort = IntSort()
@@ -35,7 +35,6 @@ class TensorModel:
         self.IsConj = Function("is_conj", self.TensorSort, BoolSort())
         self.IsComplex = Function("is_complex", self.TensorSort, BoolSort())
         self.IsZeroTensor = Function("is_zerotensor", self.TensorSort, BoolSort())
-        # self.RequiresGrad = Function("requires_grad", self.TensorSort, BoolSort())
         self.IsSparse = Function("is_sparse", self.TensorSort, BoolSort())
         self.IsNested = Function("is_nested", self.TensorSort, BoolSort())
 
@@ -47,7 +46,7 @@ class TensorModel:
             if arg_info == "Tensor":
                 self._arg_tensors[idx] = Const(f"tensor_arg_{idx}", self.TensorSort)
             elif arg_info == "int":
-                self._arg_tensors[idx] = Const(f"int_arg_{idx}", IntSort)
+                self._arg_tensors[idx] = Const(f"int_arg_{idx}", IntSort())
             elif arg_info == "int[]":
                 self._arg_tensors[idx] = Const(f"intarray_arg_{idx}", self.IntVector)
             else:
@@ -58,6 +57,8 @@ class TensorModel:
     def sanitize(name: str) -> str:
         return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
+    def add_constraint(self, constraint):
+        self.constraints.append(constraint)
 
 # ----------------------------
 # LLVM ICmp mapper
@@ -65,29 +66,81 @@ class TensorModel:
 class ICmpMapper:
     @staticmethod
     def apply(pred: int, lhs, rhs):
-        mapping = {
-            32: lhs == rhs, 33: lhs != rhs,
-            34: lhs > rhs, 35: lhs >= rhs,
-            36: lhs < rhs, 37: lhs <= rhs,
-            38: lhs > rhs, 39: lhs >= rhs,
-            40: lhs < rhs, 41: lhs <= rhs,
-        }
-        if pred not in mapping:
-            raise ValueError(f"Unknown icmp predicate: {pred}")
-        return mapping[pred]
-
+        if pred == 32: return lhs == rhs
+        if pred == 33: return lhs != rhs
+        if pred == 34: return lhs > rhs
+        if pred == 35: return lhs >= rhs
+        if pred == 36: return lhs < rhs
+        if pred == 37: return lhs <= rhs
+        if pred == 38: return lhs > rhs
+        if pred == 39: return lhs >= rhs
+        if pred == 40: return lhs < rhs
+        if pred == 41: return lhs <= rhs
+        raise ValueError(f"Unknown icmp predicate: {pred}")
 
 # ----------------------------
-# Function mapping (merged call_apply)
+# Function mapping
 # ----------------------------
 class FunctionMapper:
     def __init__(self, model: TensorModel):
         self.model = model
 
+    # Tensor copy helper: automatically registers constraints
+    def make_tensor_copy(self, src_tensor, new_sizes):
+        bm = self.model
+        new_tensor = Const(f"tensor_copy_{id(src_tensor)}", bm.TensorSort)
+        bm.add_constraint(bm.Dim(new_tensor) == bm.Dim(src_tensor))
+        bm.add_constraint(bm.Numel(new_tensor) == bm.Numel(src_tensor))
+        bm.add_constraint(bm.ElementSize(new_tensor) == bm.ElementSize(src_tensor))
+        bm.add_constraint(bm.DeviceOf(new_tensor) == bm.DeviceOf(src_tensor))
+        bm.add_constraint(bm.LayoutOf(new_tensor) == bm.LayoutOf(src_tensor))
+        bm.add_constraint(bm.IsContiguous(new_tensor) == bm.IsContiguous(src_tensor))
+        return new_tensor
+
+    def model_expand_size(self, src_tensor, target_sizes):
+        """
+        Symbolically model Tensor::expand_size:
+        src_tensor: source tensor (Z3 Const)
+        target_sizes: Z3 IntVector representing the target shape
+        Returns a new Z3 Const representing the expanded tensor
+        """
+        bm = self.model
+        new_tensor = Const(f"tensor_expand_{id(src_tensor)}", bm.TensorSort)
+
+        # Copy basic properties
+        bm.add_constraint(bm.ElementSize(new_tensor) == bm.ElementSize(src_tensor))
+        bm.add_constraint(bm.DeviceOf(new_tensor) == bm.DeviceOf(src_tensor))
+        bm.add_constraint(bm.LayoutOf(new_tensor) == bm.LayoutOf(src_tensor))
+        bm.add_constraint(bm.IsContiguous(new_tensor) == bm.IsContiguous(src_tensor))
+
+        # Set expanded shape
+        bm.add_constraint(bm.Dim(new_tensor) == Length(target_sizes))
+        bm.add_constraint(bm.Sizes(new_tensor) == target_sizes)
+
+        # Optional: Numel as product of sizes (if you want precise numel modeling)
+        numel_expr = IntVal(1)
+        for i in range(Length(target_sizes)):
+            numel_expr *= target_sizes[i]
+        bm.add_constraint(bm.Numel(new_tensor) == numel_expr)
+
+        return new_tensor
+
+    # Apply LLVM function call
     def apply(self, fn_name: str, ops):
         bm = self.model
 
-        # ---- Direct paste of your call_apply cases ----
+        # ----------------------------
+        # Keep all original call_apply cases
+        # ----------------------------
+        if fn_name == "_ZNK3c1010MaybeOwnedIN2at6TensorEEptEv":
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZN2at6TensorC2Ev":
+            logging.warning("Use _ZN2at6TensorC2Ev")
+            return Const("tensor_alloca", bm.TensorSort)
+
+        if fn_name == "_ZN2at6native17use_mkldnn_matmulERKNS_6TensorES3_S3_":
+            return BoolVal(False)
 
         if fn_name == "_ZNK3c106Device6is_cpuEv":
             return BoolVal(True)
@@ -121,7 +174,7 @@ class FunctionMapper:
 
         if fn_name in ("_ZNK2at6Tensor10contiguousEN3c1012MemoryFormatE",
                        "_ZNK2at6Tensor4conjEv"):
-            print("Not implemented yet", fn_name)
+            logging.warning("Not implemented yet: %s", fn_name)
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase3dimEv":
@@ -169,6 +222,14 @@ class FunctionMapper:
         if fn_name == "_ZNK2at10TensorBase4sizeEl":
             return bm.Size(self.build_expr(ops[0]), self.build_expr(ops[1]))
 
+        # Tensor clone/detach modeled as copy
+        if fn_name == "_ZN2at11expand_sizeERKNS_6TensorEN3c108ArrayRefIlEEPKc":
+            return self.model_expand_size(self.build_expr(ops[0]), self.build_expr(ops[1]))
+
+        if fn_name == "_ZN3c108ArrayRefIlEC2ERKSt16initializer_listIlE":
+            # Passthrough
+            return self.build_expr(ops[0])
+
         # irange handling
         if fn_name.startswith("_ZN3c106irange"):
             start = self.build_expr(ops[0]).as_long()
@@ -196,9 +257,7 @@ class FunctionMapper:
 
         raise NotImplementedError(f"Unhandled call: {fn_name}")
 
-    # ----------------------------
-    # Expression builder
-    # ----------------------------
+    # Recursive expression builder
     def build_expr(self, node):
         inst = node.get("inst")
         ops = node.get("ops", [])
@@ -235,7 +294,6 @@ class FunctionMapper:
 
         raise NotImplementedError(f"Unhandled instruction: {inst}")
 
-
 # ----------------------------
 # Solver builder
 # ----------------------------
@@ -251,23 +309,17 @@ class SolverBuilder:
             return True
         return any(self.contains_const_arg(op) for op in cond.get("ops", []))
 
-    def build_solvers_from_data(self, data):
-        solvers = []
-        for path in data.get("paths", []):
-            s = Solver()
-            for step in reversed(path.get("detail", [])):
-                cond = step.get("condition")
-                if cond is None or not self.contains_const_arg(cond):
-                    continue
-                expr = self.mapper.build_expr(cond)
-                if isinstance(expr, BoolRef):
-                    s.add(expr if step.get("taken") else Not(expr))
-                elif isinstance(expr, ArithRef):
-                    taken = step.get("taken")
-                    s.add(expr != 0 if taken else expr == 0)
-            solvers.append(s)
-        return solvers
-
+    def build_solver_from_data(self, path, solver):
+        for step in reversed(path.get("detail", [])):
+            cond = step.get("condition")
+            if cond is None or not self.contains_const_arg(cond):
+                continue
+            expr = self.mapper.build_expr(cond)
+            if isinstance(expr, BoolRef):
+                solver.add(expr if step.get("taken") else Not(expr))
+            elif isinstance(expr, ArithRef):
+                taken = step.get("taken")
+                solver.add(expr != 0 if taken else expr == 0)
 
 # ----------------------------
 # Main
@@ -286,22 +338,22 @@ def main(input_file):
     model = TensorModel(argument_map)
     mapper = FunctionMapper(model)
 
+    solvers = []
     solver_builder = SolverBuilder(model, mapper)
-    solvers = solver_builder.build_solvers_from_data(data)
-    print(llvm_name)
-
-    for idx, s in enumerate(solvers):
-        print(idx, s.assertions())
+    for path in data.get("paths", []):
+        solver = Solver()
+        solver_builder.build_solver_from_data(path, solver)
+        print(solver.assertions())
+        solvers.append(solver)
 
     fault_paths = [And(s.assertions()) for s in solvers]
-
     safe_formula = Not(Or(fault_paths))
     s_neg = Solver()
     s_neg.add(safe_formula)
 
-    # # Example domain constraints
-    # x = Int("x")
-    # s_neg.add(ForAll(x, Or([model.ElementSize(x) == v for v in [1, 2, 4, 6, 16]])))
+    # add model-wide constraints if any
+    for c in model.constraints:
+        s_neg.add(c)
 
     res = s_neg.check()
     if res == sat:
@@ -309,6 +361,5 @@ def main(input_file):
     else:
         print("No way to avoid fault.")
 
-
 if __name__ == "__main__":
-    main("extracted_smt/_ZN2at6native3maxERKNS_6TensorE.json")
+    main("extracted_smt/_ZN2at6native4addrERKNS_6TensorES3_S3_RKN3c106ScalarES7_.json")
