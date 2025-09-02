@@ -267,10 +267,12 @@ class FunctionMapper:
                 f"Unhandled call: _ZN2at6native20_resize_output_checkIlEEbRKNS_6TensorEN3c108ArrayRefIT_EE")
 
         if fn_name == "_ZN2at20isTensorSubclassLikeERKNS_6TensorE":
-            raise NotImplementedError(f"Unhandled call: _ZN2at20isTensorSubclassLikeERKNS_6TensorE")
+            # We may just set it true?
+            return BoolVal(True)
 
         if fn_name == "_ZNK2at6Tensor10contiguousEN3c1012MemoryFormatE":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor10contiguousEN3c1012MemoryFormatE")
+            bm.add_constraint(bm.checked_contiguous == True)
+            raise self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase9is_nestedEv":
             raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase9is_nestedEv")
@@ -292,10 +294,11 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase7is_sameERKS0_":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase7is_sameERKS0_")
+            raise self.build_expr(ops[0]) == self.build_expr(ops[1])
 
         if fn_name == "_ZNK2at10TensorBase7definedEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase7definedEv")
+            # We will just pump defined tensor
+            return BoolVal(True)
 
         if fn_name == "_ZNK2at10TensorBase7optionsEv":
             raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase7optionsEv")
