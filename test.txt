@@ -1,0 +1,939 @@
+Path 1:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+
+Path 2:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+  Step 9 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 2
+
+Path 3:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+  Step 9 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 2
+  Step 10 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - const_arg: 2
+
+Path 4:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+
+Path 5:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+  Step 9 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 1
+
+Path 6:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 7 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - const_int: 1
+  Step 8 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+  Step 9 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 1
+  Step 10 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - const_arg: 1
+
+Path 7:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+  Step 5 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+
+Path 8:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+  Step 5 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+  Step 6 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 2
+
+Path 9:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 1
+      - const_int: 1
+  Step 5 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase3dimEv
+        - const_arg: 2
+      - const_int: 1
+  Step 6 (isSwitch=False, taken=1):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 2
+  Step 7 (isSwitch=False, taken=0):
+    - icmp
+      - const_int: 32
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - const_arg: 1
+      - call
+        - const_global: _ZNK2at10TensorBase5numelEv
+        - const_arg: 2
+
+Path 10:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 2
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZN2at6native17use_mkldnn_matmulERKNS_6TensorES3_S3_
+      - const_arg: 1
+      - const_arg: 2
+      - call
+        - const_global: _ZN2at6TensorC2Ev
+  Step 7 (isSwitch=True, taken=0):
+    - call
+      - const_global: _ZN6detail11scalar_typeEN3c1010ScalarTypeE
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - const_arg: 1
+
+Path 11:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 7 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 1
+  Step 8 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 2
+  Step 9 (isSwitch=True, taken=0):
+    - call
+      - const_global: _ZN6detail11scalar_typeEN3c1010ScalarTypeE
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 1
+
+Path 12:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 6 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 7 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - call
+        - const_global: _ZNK2at6Tensor4conjEv
+        - const_arg: 2
+  Step 8 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 1
+  Step 9 (isSwitch=True, taken=0):
+    - call
+      - const_global: _ZN6detail11scalar_typeEN3c1010ScalarTypeE
+      - call
+        - const_global: _ZNK2at10TensorBase11scalar_typeEv
+        - call
+          - const_global: _ZNK2at6Tensor4conjEv
+          - const_arg: 2
+
+Path 13:
+  Step 1 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZNK2at10TensorBase10is_complexEv
+      - const_arg: 1
+  Step 2 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 1
+  Step 3 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase7is_conjEv
+      - const_arg: 2
+  Step 4 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 1
+  Step 5 (isSwitch=False, taken=0):
+    - call
+      - const_global: _ZNK2at10TensorBase14_is_zerotensorEv
+      - const_arg: 2
+  Step 6 (isSwitch=False, taken=1):
+    - call
+      - const_global: _ZN2at6native17use_mkldnn_matmulERKNS_6TensorES3_S3_
+      - const_arg: 1
+      - const_arg: 2
+      - call
+        - const_global: _ZN2at6TensorC2Ev
+
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ False,
+ Not(False),
+ And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ Not(1 == Length(sizes(tensor_arg_2)))]
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+dtype(tensor_arg_1) dtype(tensor_arg_2)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ False,
+ Not(False),
+ And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ 1 == Length(sizes(tensor_arg_2)),
+ Not(dtype(tensor_arg_1) == dtype(tensor_arg_2))]
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+dtype(tensor_arg_1) dtype(tensor_arg_2)
+1*
+If(0 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 3),
+   1) 1*
+If(0 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 3),
+   1)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ False,
+ Not(False),
+ And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ 1 == Length(sizes(tensor_arg_2)),
+ dtype(tensor_arg_1) == dtype(tensor_arg_2),
+ Not(1*
+     If(0 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 3),
+        1) ==
+     1*
+     If(0 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 3),
+        1))]
+Length(sizes(tensor_arg_2)) 1
+Length(sizes(tensor_arg_1)) 1
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ False,
+ And(dtype(tensor_arg_2) != 8,
+     dtype(tensor_arg_2) != 9,
+     dtype(tensor_arg_2) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_2)),
+ Not(1 == Length(sizes(tensor_arg_1)))]
+Length(sizes(tensor_arg_2)) 1
+Length(sizes(tensor_arg_1)) 1
+dtype(tensor_arg_2) dtype(tensor_arg_1)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ False,
+ And(dtype(tensor_arg_2) != 8,
+     dtype(tensor_arg_2) != 9,
+     dtype(tensor_arg_2) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_2)),
+ 1 == Length(sizes(tensor_arg_1)),
+ Not(dtype(tensor_arg_2) == dtype(tensor_arg_1))]
+Length(sizes(tensor_arg_2)) 1
+Length(sizes(tensor_arg_1)) 1
+dtype(tensor_arg_2) dtype(tensor_arg_1)
+1*
+If(0 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 3),
+   1) 1*
+If(0 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 3),
+   1)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ False,
+ And(dtype(tensor_arg_2) != 8,
+     dtype(tensor_arg_2) != 9,
+     dtype(tensor_arg_2) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_2)),
+ 1 == Length(sizes(tensor_arg_1)),
+ dtype(tensor_arg_2) == dtype(tensor_arg_1),
+ Not(1*
+     If(0 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 3),
+        1) ==
+     1*
+     If(0 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 3),
+        1))]
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ Not(1 == Length(sizes(tensor_arg_2)))]
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+dtype(tensor_arg_1) dtype(tensor_arg_2)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ 1 == Length(sizes(tensor_arg_2)),
+ Not(dtype(tensor_arg_1) == dtype(tensor_arg_2))]
+Length(sizes(tensor_arg_1)) 1
+Length(sizes(tensor_arg_2)) 1
+dtype(tensor_arg_1) dtype(tensor_arg_2)
+1*
+If(0 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_1)),
+   Nth(sizes(tensor_arg_1), 3),
+   1) 1*
+If(0 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 0),
+   1)*
+If(1 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 1),
+   1)*
+If(2 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 2),
+   1)*
+If(3 < Length(sizes(tensor_arg_2)),
+   Nth(sizes(tensor_arg_2), 3),
+   1)
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ 1 == Length(sizes(tensor_arg_1)),
+ 1 == Length(sizes(tensor_arg_2)),
+ dtype(tensor_arg_1) == dtype(tensor_arg_2),
+ Not(1*
+     If(0 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_1)),
+        Nth(sizes(tensor_arg_1), 3),
+        1) ==
+     1*
+     If(0 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 0),
+        1)*
+     If(1 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 1),
+        1)*
+     If(2 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 2),
+        1)*
+     If(3 < Length(sizes(tensor_arg_2)),
+        Nth(sizes(tensor_arg_2), 3),
+        1))]
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ Not(False),
+ Not(False),
+ Not(False),
+ dtype(tensor_arg_1) == 0]
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ False,
+ Not(False),
+ And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ Not(False),
+ Not(False),
+ dtype(tensor_arg_1) == 0]
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ False,
+ And(dtype(tensor_arg_2) != 8,
+     dtype(tensor_arg_2) != 9,
+     dtype(tensor_arg_2) != 10),
+ Not(False),
+ Not(False),
+ Not(False),
+ Not(False),
+ dtype(tensor_arg_2) == 0]
+[And(dtype(tensor_arg_1) != 8,
+     dtype(tensor_arg_1) != 9,
+     dtype(tensor_arg_1) != 10),
+ Not(False),
+ Not(False),
+ Not(False),
+ Not(False),
+ False]
+Inputs that avoid fault: [tensor_arg_1 = tensor_structure(Unit(3),
+                                 Empty(Seq(Int)),
+                                 8),
+ tensor_arg_2 = tensor_structure(Empty(Seq(Int)),
+                                 Unit(3),
+                                 2),
+ checked_tensor_conj = True]
