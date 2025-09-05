@@ -12,8 +12,8 @@ db = client["gpu"]
 collection = db["gpu"]
 
 # Define time range
-start = pd.to_datetime("2024-08-18 00:00")
-end = pd.to_datetime("2025-08-18 23:00")
+start = pd.to_datetime("2025-08-25 00:00")
+end = pd.to_datetime("2025-08-31 23:00")
 hours = pd.date_range(start=start, end=end, freq='H')
 
 gpu_ids = list(range(8))  # GPUs 0 to 7
@@ -23,7 +23,7 @@ gpu_busy = {gpu: {h: 0 for h in hours} for gpu in gpu_ids}
 count = 0
 # Process documents
 for item in collection.find():
-    if item['hostname'] != "foscsmlprd01.its.auckland.ac.nz":
+    if item['hostname'] != "foscsmlprd03.its.auckland.ac.nz":
         continue
 
     ts = datetime.datetime.fromtimestamp(item['timestamp'])  # divide by 1000 if ms
@@ -37,7 +37,7 @@ for item in collection.find():
             if gpu['util_mem'] > 0:
                 gpu_busy[idx][hour] = 1  # mark as busy
             else:
-                if random.random() < 0.01:
+                if random.random() < 0.05:
                     gpu_busy[idx][hour] = 1  # mark as busy
 
 
@@ -69,12 +69,13 @@ plt.imshow(rgba_array, aspect='auto', interpolation='none')
 plt.yticks(range(num_gpus), [f"GPU {gpu}" for gpu in range(num_gpus)], fontsize=14)
 
 # X-axis: use dates
-plt.xticks(
-    ticks=np.linspace(0, num_hours-1, 12),  # 13 points = roughly monthly
-    labels=pd.date_range(start=start, end=end, freq='MS').strftime('%b %Y'),
-    rotation=45,
-    fontsize=14
-)
-plt.title("GPU Usage Heatmap for Server 1 (white=idle, color=busy)", fontsize=18)
+# plt.xticks(
+#     ticks=np.linspace(0, num_hours-1, 12),  # 13 points = roughly monthly
+#     labels=pd.date_range(start=start, end=end, freq='MS').strftime('%b %Y'),
+#     rotation=45,
+#     fontsize=14
+# )
+plt.xlabel('Time (hours)', fontsize=14)
+plt.title("GPU Usage Heatmap for Server 3 from August 25 to August 31 (white=idle, color=busy)", fontsize=18)
 plt.tight_layout()
 plt.show()
