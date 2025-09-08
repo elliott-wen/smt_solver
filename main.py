@@ -2985,4 +2985,8 @@ def main(input_file):
 
 
 if __name__ == "__main__":
-    main("extracted_smt/_ZN2at6native7normal_ERNS_6TensorEddSt8optionalINS_9GeneratorEE.json")
+    import sys
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main("extracted_smt/_ZN2at6native7normal_ERNS_6TensorEddSt8optionalINS_9GeneratorEE.json")
