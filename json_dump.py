@@ -51,12 +51,6 @@ def count_call_instruction(instr, call_set, already_add):
                 count_call_instruction(op, call_set, already_add)
 
 
-def contains_const_arg(cond):
-    if not isinstance(cond, dict):
-        return False
-    if cond.get("inst") == "const_arg":
-        return True
-    return any(contains_const_arg(op) for op in cond.get("ops", []))
 
 
 def count_call_types(data, call_set):
@@ -65,7 +59,7 @@ def count_call_types(data, call_set):
         path_detail = path["detail"]
         for step_idx, step in enumerate(reversed(path_detail), 1):
             cond = step.get("condition")
-            if cond and contains_const_arg(cond):
+            if cond:
                 count_call_instruction(cond, call_set, already_add)
 
     return call_set
@@ -86,7 +80,7 @@ if __name__ == "__main__":
     for item in sorted_data:
         top_100_set.add(item)
         print(item)
-        if len(top_100_set) > 50:
+        if len(top_100_set) > 38:
             break
 
 

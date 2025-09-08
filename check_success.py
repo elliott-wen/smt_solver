@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
             if returncode == 0:
                 success_count += 1
+                print(f"[OK] {success_count}")
             else:
                 fail_count += 1
                 # Uncomment if you want debugging info:
