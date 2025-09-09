@@ -31,6 +31,13 @@ class TensorModel:
         )
         self.ScalarStruct = self.ScalarStruct.create()
 
+        self.element_sizes_seq = z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(2)) + \
+                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(2)) + \
+                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(1)) + \
+                    z3.Unit(z3.IntVal(2)) + z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + \
+                    z3.Unit(z3.IntVal(16)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1)) + \
+                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1))
+
         self.argument_map = argument_map
 
         self.checked_contiguous = Bool("checked_contiguous")
@@ -52,6 +59,12 @@ class TensorModel:
                 self._arg_tensors[idx] = Const(f"scalar_arg_{idx}", self.ScalarStruct)
             elif arg_info == "float?":
                 self._arg_tensors[idx] = Const(f"optional_float_arg_{idx}", SeqSort(RealSort()))
+            elif arg_info == "int?":
+                self._arg_tensors[idx] = Const(f"optional_float_arg_{idx}", SeqSort(IntSort()))
+            elif arg_info == "TensorIterator":
+                self._arg_tensors[idx] = Const(f"tensor_iterator_arg_{idx}", SeqSort(self.TensorStruct))
+            elif arg_info == "bool":
+                self._arg_tensors[idx] = Const(f"bool_arg_{idx}", BoolSort())
             else:
                 raise ValueError(f"Unhandled argument type {arg_info}")
         return self._arg_tensors[idx]
@@ -70,7 +83,6 @@ class TensorModel:
 class ICmpMapper:
     @staticmethod
     def apply(pred: int, lhs, rhs):
-        print(lhs, rhs)
         if pred == 32: return lhs == rhs
         if pred == 33: return lhs != rhs
         if pred == 34: return lhs > rhs
@@ -221,7 +233,7 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase17is_floating_pointEv":
-            stype = bm.ScalarStruct.dtype(self.build_expr(ops[0]))
+            stype = bm.TensorStruct.dtype(self.build_expr(ops[0]))
             # Floating types: Half(5), Float(6), Double(7), BFloat16(15)
             is_floating = Or(stype == 5, stype == 6, stype == 7, stype == 15)
             return is_floating
@@ -241,7 +253,7 @@ class FunctionMapper:
             return seq_expr
 
         if fn_name == "_ZNK2at10TensorBase6is_cpuEv":
-            raise BoolVal(True)
+            return BoolVal(True)
 
         if fn_name == "_ZN3c1016OptionalArrayRefIlEC2ESt9nullopt_t":
             seq_expr = Empty(SeqSort(SeqSort(IntSort)))  # The first seq is for optional, the second is for array
@@ -355,7 +367,7 @@ class FunctionMapper:
             return Empty(SeqSort(bm.TensorStruct))
 
         if fn_name == "_ZNK2at10TensorBase9is_sparseEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase9is_sparseEv")
+            return BoolVal(False)
 
         if fn_name == "_ZN3c1021isReducedFloatingTypeENS_10ScalarTypeE":
             raise NotImplementedError(f"Unhandled call: _ZN3c1021isReducedFloatingTypeENS_10ScalarTypeE")
@@ -379,7 +391,9 @@ class FunctionMapper:
             return Length(bm.TensorStruct.sizes(self.build_expr(ops[0])))
 
         if fn_name == "_ZNK2at10TensorBase4sizeEl":
-            return bm.TensorStruct.sizes(self.build_expr(ops[0]))
+            arr = bm.TensorStruct.sizes(self.build_expr(ops[0]))
+            idx = self.build_expr(ops[1])
+            return arr[idx]
 
         if fn_name == "_ZN6caffe2eqERKNS_8TypeMetaES2_":
             raise NotImplementedError(f"Unhandled call: _ZN6caffe2eqERKNS_8TypeMetaES2_")
@@ -435,7 +449,7 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZN2at6native22get_nested_tensor_implERKNS_6TensorE":
-            raise NotImplementedError(f"Unhandled call: _ZN2at6native22get_nested_tensor_implERKNS_6TensorE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNK3c1015SmallVectorImplIlEeqERKS1_":
             return self.build_expr(ops[0]) == self.build_expr(ops[1])
@@ -531,7 +545,7 @@ class FunctionMapper:
         if fn_name == "_ZNK2at18TensorIteratorBase5numelEv":
             raise NotImplementedError("_ZNK2at18TensorIteratorBase5numelEv")
 
-        if fn_name == "_ZNK2at10TensorBase5numelEv":
+        if fn_name == "_ZNK2at10TensorBase5numelEv" or fn_name == "_ZNK3c1010TensorImpl5numelEv":
             tensor_opt = self.build_expr(ops[0])
             sizes = bm.TensorStruct.sizes(tensor_opt)
             numel = IntVal(1)
@@ -709,7 +723,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase11is_alias_ofERKS0_")
 
         if fn_name == "_ZNK3c108ArrayRefIlE4sizeEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK3c108ArrayRefIlE4sizeEv")
+            return Length(self.build_expr(ops[0]))
 
         if fn_name == "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2IS3_EEPKcRKS3_":
             raise NotImplementedError(
@@ -772,7 +786,8 @@ class FunctionMapper:
                 f"Unhandled call: _ZN2at6detail30computeStorageNbytesContiguousEN3c108ArrayRefIlEEmm")
 
         if fn_name == "_ZNK6caffe28TypeMeta8itemsizeEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK6caffe28TypeMeta8itemsizeEv")
+            idx = self.build_expr(ops[0])
+            return bm.element_sizes_seq[idx]
 
         if fn_name == "_ZN3c106sym_leEll":
             raise NotImplementedError(f"Unhandled call: _ZN3c106sym_leEll")
@@ -2903,6 +2918,8 @@ class FunctionMapper:
         if inst in ("load", "store"):
             return self.build_expr(ops[0])
         if inst == "call":
+            if len(ops) == 0:
+                raise NotImplementedError("Indirect call unsupported")
             fn_name = ops[0]["const"]
             return self.apply(fn_name, ops[1:])
         if inst == "icmp":
@@ -2924,6 +2941,8 @@ class FunctionMapper:
             return self.build_expr(ops[0]) * self.build_expr(ops[1])
         if inst in ("sdiv", "udiv", "fdiv", "div"):
             return self.build_expr(ops[0]) / self.build_expr(ops[1])
+        if inst in ("srem", "urem"):
+            return self.build_expr(ops[0]) % self.build_expr(ops[1])
         if inst in ("trunc", "sext", "zext", "fptosi", "ptrtoint",
                     "sitofp", "inttoptr", "fpext", "uitofp"):
             return self.build_expr(ops[0])
@@ -2971,9 +2990,17 @@ def main(input_file):
 
     llvm_name = data['paths'][0]['funcInfo']['llvm_name']
     llvm_params = data['paths'][0]['funcInfo']['llvm_params']
+
     argument_map = extract_llvm_param_types(llvm_name)
     if "sret_" in llvm_params[0]:
         argument_map.insert(0, "Tensor")
+
+    # print(llvm_params)
+    # print(argument_map)
+    # A special case, where *this is passed, which is tensoriterator
+    if len(llvm_params) != len(argument_map) and llvm_params[0] == "ptr this":
+        argument_map.insert(0, "TensorIterator")
+
 
     model = TensorModel(argument_map)
     mapper = FunctionMapper(model)
@@ -3007,4 +3034,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native5logitERKNS_6TensorESt8optionalIdE.json")
+        main("extracted_smt/_ZN2at6native24structured_polygamma_out4implElRKNS_6TensorES4_.json")

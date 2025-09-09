@@ -1,5 +1,6 @@
 import os
 import json
+import pickle
 
 
 def print_instruction(instr, indent=0):
@@ -34,65 +35,84 @@ def print_paths(data):
         print()
 
 
-def count_call_instruction(instr, call_set, already_add):
+def count_call_instruction(instr, already_add):
     inst = instr.get("inst")
+    if "ops" in instr:
+        for op in instr["ops"]:
+            count_call_instruction(op, already_add)
+
     if inst == "call":
         # recurse into ops
         if "ops" in instr:
-
             ops = instr["ops"]
             if len(ops) == 0:
                 return
             callee = ops[0]['const']
             if callee not in already_add:
-                call_set[callee] = call_set.get(callee, 0) + 1
                 already_add.add(callee)
-            for op in instr["ops"]:
-                count_call_instruction(op, call_set, already_add)
 
 
-
-
-def count_call_types(data, call_set):
+def count_call_types(data):
     already_add = set()
     for path_idx, path in enumerate(data["paths"], 1):
         path_detail = path["detail"]
         for step_idx, step in enumerate(reversed(path_detail), 1):
             cond = step.get("condition")
             if cond:
-                count_call_instruction(cond, call_set, already_add)
+                count_call_instruction(cond, already_add)
 
-    return call_set
+    return already_add
 
 
-if __name__ == "__main__":
-
+def get_popular_call():
     call_sets = {}
     for item in os.listdir("extracted_smt"):
         file = os.path.join("extracted_smt", item)
         with open(file, 'r') as f:
             data = json.load(f)
-        count_call_types(data, call_sets)
 
-    # Sort by values in descending order
+        already_add = count_call_types(data)
+        for tmp in already_add:
+            call_sets[tmp] = call_sets.get(tmp, 0) + 1
+
     sorted_data = dict(sorted(call_sets.items(), key=lambda item: item[1], reverse=True))
     top_100_set = set()
     for item in sorted_data:
         top_100_set.add(item)
         print(item)
-        if len(top_100_set) > 38:
+        if len(top_100_set) > 100:
             break
+    return top_100_set
 
 
-    # let's see how many
-    ok = 0
+def debug_s3():
+    top_100_set = get_popular_call()
+    # # let's see how many
+    theory_files = set()
+    total = 0
     for item in os.listdir("extracted_smt"):
-        call_sets = {}
+        if 'sparse' in item:
+            continue
+
+        total += 1
         file = os.path.join("extracted_smt", item)
         with open(file, 'r') as f:
             data = json.load(f)
-        count_call_types(data, call_sets)
-        remaining_set = set(call_sets.keys()) - top_100_set
+        temp_call_sets = count_call_types(data)
+        remaining_set = temp_call_sets - top_100_set
         if len(remaining_set) == 0:
-            ok += 1
-    print(ok)
+            theory_files.add(item)
+    #
+    print(total, len(theory_files))
+
+    # with open("success_files.pickle", "rb") as f:
+    #     reality = pickle.load(f)
+
+    # for item in theory_files - reality:
+    #     print(item)
+
+
+if __name__ == "__main__":
+    debug_s3()
+
+    # print(reality)

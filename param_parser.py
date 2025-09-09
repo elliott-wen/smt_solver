@@ -182,6 +182,8 @@ def normalize_llvm_type(ty: str) -> str:
         return "int[]?"  # nullable int list
     if "DimnameList" in ty:
         return "int[]"
+    if ty.startswith("c10::SmallVector<long"):
+        return "int[]"
 
     # ---- Optional primitives ----
     if ty.startswith("c10::optional<int") or ty.startswith("std::optional<int"):
@@ -190,6 +192,14 @@ def normalize_llvm_type(ty: str) -> str:
         return "float?"
     if ty.startswith("c10::optional<bool") or ty.startswith("std::optional<bool"):
         return "bool?"
+    if ty.startswith("std::optional<c10::Layout"):
+        return "int?"
+    if ty.startswith("std::optional<c10::MemoryFormat"):
+        return "int?"
+    if ty.startswith("std::optional<c10::Device"):
+        return "str?"
+
+
     if "std::optional<std::basic_string_view" in ty or "c10::optional<c10::string_view" in ty:
         return "str?"
 

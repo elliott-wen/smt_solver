@@ -1,6 +1,8 @@
 import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import pickle
+
 
 def run_file(file):
     """Run main.py with the given file and return (file, returncode, stdout, stderr)."""
@@ -15,6 +17,7 @@ def run_file(file):
     except Exception as e:
         return file, -1, "", str(e)
 
+
 if __name__ == "__main__":
     input_dir = "extracted_smt"
     files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
@@ -22,9 +25,9 @@ if __name__ == "__main__":
     call_sets = {}
     success_count = 0
     fail_count = 0
-
+    success_set = set()
     # Adjust max_workers if you don't want to use all 256 cores
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=4) as executor:
         futures = {executor.submit(run_file, f): f for f in files}
 
         for future in as_completed(futures):
@@ -33,7 +36,7 @@ if __name__ == "__main__":
 
             if returncode == 0:
                 success_count += 1
-                print(f"[OK] {success_count}")
+                success_set.add(file.replace("extracted_smt/", ""))
             else:
                 fail_count += 1
                 # Uncomment if you want debugging info:
@@ -42,3 +45,6 @@ if __name__ == "__main__":
     print(f"Total files: {len(call_sets)}")
     print(f"Successful: {success_count}")
     print(f"Failed: {fail_count}")
+
+    with open("success_files.pickle", "wb") as f:
+        pickle.dump(success_set, f)
