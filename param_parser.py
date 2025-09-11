@@ -198,6 +198,8 @@ def normalize_llvm_type(ty: str) -> str:
         return "bool?"
     if ty.startswith("std::optional<c10::Layout"):
         return "int?"
+    if ty.startswith("std::optional<long"):
+        return "int?"
     if ty.startswith("std::optional<c10::MemoryFormat"):
         return "int?"
     if ty.startswith("std::optional<c10::Device"):

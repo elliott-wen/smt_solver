@@ -32,11 +32,11 @@ class TensorModel:
         self.ScalarStruct = self.ScalarStruct.create()
 
         self.element_sizes_seq = z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(2)) + \
-                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(2)) + \
-                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(1)) + \
-                    z3.Unit(z3.IntVal(2)) + z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + \
-                    z3.Unit(z3.IntVal(16)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1)) + \
-                    z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1))
+                                 z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(2)) + \
+                                 z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + z3.Unit(z3.IntVal(1)) + \
+                                 z3.Unit(z3.IntVal(2)) + z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(8)) + \
+                                 z3.Unit(z3.IntVal(16)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1)) + \
+                                 z3.Unit(z3.IntVal(4)) + z3.Unit(z3.IntVal(1)) + z3.Unit(z3.IntVal(1))
 
         self.argument_map = argument_map
 
@@ -360,7 +360,7 @@ class FunctionMapper:
             return IntVal(0)
 
         if fn_name == "_ZNR2at6TensoraSEOS0_":
-            raise NotImplementedError(f"Unhandled call: _ZNR2at6TensoraSEOS0_")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZN2at20TensorIteratorConfig5buildEv":
             return self.build_expr(ops[0])
@@ -406,7 +406,7 @@ class FunctionMapper:
             return self.build_expr(ops[0]) == self.build_expr(ops[1])
 
         if fn_name == "_ZNKSt8optionalIlE9has_valueEv":
-            raise NotImplementedError(f"Unhandled call: _ZNKSt8optionalIlE9has_valueEv")
+            return Length(self.build_expr(ops[0])) > 0
 
         if fn_name == "_ZN2at20TensorIteratorConfig10add_outputERKNS_10TensorBaseE":
             return Concat(self.build_expr(ops[0]), Unit(self.build_expr(ops[1])))
@@ -567,6 +567,17 @@ class FunctionMapper:
 
         if fn_name == "_ZN2at20TensorIteratorConfig21set_check_mem_overlapEb":
             return self.build_expr(ops[0])
+
+        if fn_name == "_ZNRSt8optionalIN3c1012MemoryFormatEE5valueEv":
+            arr = self.build_expr(ops[0])
+            return arr[0]
+
+        if fn_name == "_ZNOSt8optionalIlE8value_orIiEElOT_":
+            arr = self.build_expr(ops[0])
+            default = self.build_expr(ops[1])
+            arr_len = Length(arr)
+            # if arr Length > 0, return arr[0] else return default
+            return z3.If(arr_len > 0, arr[0], default)
 
         if fn_name == "_ZNK2at6native16NestedTensorImpl8opt_sizeEl":
             raise NotImplementedError(f"Unhandled call: _ZNK2at6native16NestedTensorImpl8opt_sizeEl")
@@ -2905,6 +2916,9 @@ class FunctionMapper:
         if fn_name == "_ZN2at8choleskyERKNS_6TensorEb":
             raise NotImplementedError(f"Unhandled call: _ZN2at8choleskyERKNS_6TensorEb")
 
+        if fn_name == "_ZNK3c106SymInt12maybe_as_intEv":
+            return self.build_expr(ops[0])
+
         raise NotImplementedError(f"Unhandled call: {fn_name}")
 
     # Recursive expression builder
@@ -2937,6 +2951,7 @@ class FunctionMapper:
             pred = int(ops[0]["const"])
             lhs, rhs = self.build_expr(ops[1]), self.build_expr(ops[2])
             return FCmpMapper.apply(pred, lhs, rhs)
+
         if inst == "select":
             cond, tval, fval = map(self.build_expr, ops)
             return If(cond, tval, fval)
@@ -3012,7 +3027,6 @@ def main(input_file):
     if len(llvm_params) != len(argument_map) and llvm_params[0] == "ptr this":
         argument_map.insert(0, "TensorIterator")
 
-
     model = TensorModel(argument_map)
     mapper = FunctionMapper(model)
 
@@ -3045,4 +3059,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native30replication_pad2d_backward_cpuERKNS_6TensorES3_N3c108ArrayRefIlEE.json")
+        main("extracted_smt/_ZN2at6native23adaptive_avg_pool3d_cpuERKNS_6TensorEN3c108ArrayRefIlEE.json")
