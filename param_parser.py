@@ -2,6 +2,8 @@ import yaml
 import re
 import os
 import json
+
+
 # import pickle
 
 
@@ -125,6 +127,7 @@ def clean_signature(sig: str) -> str:
     # remove trailing " (.digits.digits.digits)" part
     return re.sub(r'\s*\(\.\d+(\.\d+)*\)\s*$', '', sig)
 
+
 def split_params(param_str: str):
     """Split C++ parameter list by commas, ignoring template commas."""
     params, depth, current = [], 0, []
@@ -143,6 +146,7 @@ def split_params(param_str: str):
     if current:
         params.append("".join(current).strip())
     return params
+
 
 def normalize_llvm_type(ty: str) -> str:
     ty = ty.replace("const", "").replace("&", "").replace("*", "").strip()
@@ -199,6 +203,8 @@ def normalize_llvm_type(ty: str) -> str:
     if ty.startswith("std::optional<c10::Device"):
         return "str?"
 
+    if ty.startswith("std::basic_string_view<char,"):
+        return "str"
 
     if "std::optional<std::basic_string_view" in ty or "c10::optional<c10::string_view" in ty:
         return "str?"
@@ -221,6 +227,7 @@ def normalize_llvm_type(ty: str) -> str:
     # ---- Default fallback ----
     # return ty
     raise ValueError(f"Unknown type {ty}")
+
 
 def extract_llvm_param_types(signature: str):
     """

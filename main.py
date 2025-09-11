@@ -53,6 +53,8 @@ class TensorModel:
                 self._arg_tensors[idx] = Const(f"int_arg_{idx}", IntSort())
             elif arg_info == "int[]":
                 self._arg_tensors[idx] = Const(f"intarray_arg_{idx}", self.IntArray)
+            elif arg_info == "int[]?":
+                self._arg_tensors[idx] = Const(f"optional_intarray_arg_{idx}", SeqSort(self.IntArray))
             elif arg_info == "float":
                 self._arg_tensors[idx] = Const(f"float_arg_{idx}", RealSort())
             elif arg_info == "Scalar":
@@ -344,7 +346,7 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase7is_sameERKS0_":
-            raise self.build_expr(ops[0]) == self.build_expr(ops[1])
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
 
         if fn_name == "_ZNK2at10TensorBase7definedEv":
             # We will just pump defined tensor
@@ -370,7 +372,12 @@ class FunctionMapper:
             return BoolVal(False)
 
         if fn_name == "_ZN3c1021isReducedFloatingTypeENS_10ScalarTypeE":
-            raise NotImplementedError(f"Unhandled call: _ZN3c1021isReducedFloatingTypeENS_10ScalarTypeE")
+            stype = self.build_expr(ops[0])  # ops[0] is a ScalarType
+            return Or(
+                stype == 5,  # Half
+                stype == 15  # BFloat16
+                # add new ones if other reduced floats are supported
+            )
 
         if fn_name == "_ZN2at6TensorC2Ev":
             return Const(f'empty_tensor_{uuid.uuid4().hex}', bm.TensorStruct)
@@ -396,7 +403,7 @@ class FunctionMapper:
             return arr[idx]
 
         if fn_name == "_ZN6caffe2eqERKNS_8TypeMetaES2_":
-            raise NotImplementedError(f"Unhandled call: _ZN6caffe2eqERKNS_8TypeMetaES2_")
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
 
         if fn_name == "_ZNKSt8optionalIlE9has_valueEv":
             raise NotImplementedError(f"Unhandled call: _ZNKSt8optionalIlE9has_valueEv")
@@ -641,7 +648,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZN2at14TensorIterator9binary_opERNS_10TensorBaseERKS1_S4_")
 
         if fn_name == "_ZNK2at10TensorBase10ndimensionEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase10ndimensionEv")
+            return Length(bm.TensorStruct.sizes(self.build_expr(ops[0])))
 
         if fn_name == "_ZNK2at18TensorIteratorBase11tensor_baseEl":
             raise NotImplementedError(f"Unhandled call: _ZNK2at18TensorIteratorBase11tensor_baseEl")
@@ -905,7 +912,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZN2at14TensorIteratorC2Ev")
 
         if fn_name == "_ZNK2at18TensorIteratorBase8ntensorsEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at18TensorIteratorBase8ntensorsEv")
+            return Length(self.build_expr(ops[0]))
 
         if fn_name == "_ZNSt8optionalIN3c106LayoutEEC2IRS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES6_IS7_ISt10in_place_tSE_EESt16is_constructibleIS1_JSA_EESt14is_convertibleISA_S1_EEEbE4typeELb1EEEOSA_":
             raise NotImplementedError(
@@ -2948,7 +2955,11 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if inst == "and":
-            return self.build_expr(ops[0]) & self.build_expr(ops[1])
+            lhs = self.build_expr(ops[0])
+            rhs = self.build_expr(ops[1])
+
+            return lhs & rhs
+
         if inst == "or":
             return self.build_expr(ops[0]) | self.build_expr(ops[1])
         if inst == "xor":
@@ -3034,4 +3045,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native24structured_polygamma_out4implElRKNS_6TensorES4_.json")
+        main("extracted_smt/_ZN2at6native30replication_pad2d_backward_cpuERKNS_6TensorES3_N3c108ArrayRefIlEE.json")

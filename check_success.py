@@ -20,7 +20,7 @@ def run_file(file):
 
 if __name__ == "__main__":
     input_dir = "extracted_smt"
-    files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+    files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and "sparse" not in f]
 
     call_sets = {}
     success_count = 0
@@ -28,6 +28,8 @@ if __name__ == "__main__":
     success_set = set()
     # Adjust max_workers if you don't want to use all 256 cores
     with ProcessPoolExecutor(max_workers=4) as executor:
+
+
         futures = {executor.submit(run_file, f): f for f in files}
 
         for future in as_completed(futures):

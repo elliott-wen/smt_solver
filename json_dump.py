@@ -105,11 +105,11 @@ def debug_s3():
     #
     print(total, len(theory_files))
 
-    # with open("success_files.pickle", "rb") as f:
-    #     reality = pickle.load(f)
+    with open("success_files.pickle", "rb") as f:
+        reality = pickle.load(f)
 
-    # for item in theory_files - reality:
-    #     print(item)
+    for item in theory_files - reality:
+        print(item)
 
 
 if __name__ == "__main__":
