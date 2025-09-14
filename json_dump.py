@@ -80,7 +80,7 @@ def get_popular_call():
     for item in sorted_data:
         top_100_set.add(item)
         print(item)
-        if len(top_100_set) > 150:
+        if len(top_100_set) > 200:
             break
     return top_100_set
 

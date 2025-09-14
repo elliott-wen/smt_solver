@@ -6,6 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/extracted_smt" />
       <excludeFolder url="file://$MODULE_DIR$/debug" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/extracted_smt_bak" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (smt_solver)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

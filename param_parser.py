@@ -188,6 +188,8 @@ def normalize_llvm_type(ty: str) -> str:
         return "int[]"
     if ty.startswith("c10::SmallVector<long"):
         return "int[]"
+    if ty.startswith("std::array<bool,"):
+        return "int[]"
 
     # ---- Optional primitives ----
     if ty.startswith("c10::optional<int") or ty.startswith("std::optional<int"):

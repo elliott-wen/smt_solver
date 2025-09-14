@@ -27,7 +27,7 @@ if __name__ == "__main__":
     fail_count = 0
     success_set = set()
     # Adjust max_workers if you don't want to use all 256 cores
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=16) as executor:
 
 
         futures = {executor.submit(run_file, f): f for f in files}
@@ -39,6 +39,8 @@ if __name__ == "__main__":
             if returncode == 0:
                 success_count += 1
                 success_set.add(file.replace("extracted_smt/", ""))
+                os.unlink(file)
+                print("OK", file)
             else:
                 fail_count += 1
                 # Uncomment if you want debugging info:

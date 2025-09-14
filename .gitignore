@@ -1,5 +1,6 @@
 debug/*
 extracted_smt/*
+extracted_smt_bak/*
 mapping.pickle
 .venv/*
 venv/*
