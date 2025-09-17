@@ -395,10 +395,10 @@ class FunctionMapper:
             return copy_tensor(bm, self.build_expr(ops[0]))
 
         if fn_name == "_ZNK2at6Tensor12is_coalescedEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor12is_coalescedEv")
+            return BoolVal(False)
 
         if fn_name == "_ZNKR3c1010MaybeOwnedIN2at6TensorEEdeEv":
-            raise NotImplementedError(f"Unhandled call: _ZNKR3c1010MaybeOwnedIN2at6TensorEEdeEv")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNK3c106DeviceeqERKS0_":
             return BoolVal(True)
@@ -448,8 +448,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNK3c1013integer_rangeIlLb0ELb1EE3endEv")
 
         if fn_name == "_ZN3c1011SmallVectorIlLj5EEC2INS_8ArrayRefIlEETnNSt9enable_ifIXaasr3stdE16is_convertible_vINSt15iterator_traitsIDTcldtclsr3stdE7declvalIT_EE5beginEEE17iterator_categoryESt18input_iterator_tagEsr3stdE16is_convertible_vINS6_IDTcldtclsr3stdE7declvalIS7_EE3endEEE17iterator_categoryESB_EEiE4typeELi0EEEOS7_":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN3c1011SmallVectorIlLj5EEC2INS_8ArrayRefIlEETnNSt9enable_ifIXaasr3stdE16is_convertible_vINSt15iterator_traitsIDTcldtclsr3stdE7declvalIT_EE5beginEEE17iterator_categoryESt18input_iterator_tagEsr3stdE16is_convertible_vINS6_IDTcldtclsr3stdE7declvalIS7_EE3endEEE17iterator_categoryESB_EEiE4typeELi0EEEOS7_")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNK3c108ArrayRefIlE5sliceEmm":
             raise NotImplementedError(f"Unhandled call: _ZNK3c108ArrayRefIlE5sliceEmm")
@@ -794,7 +793,9 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNSaIcEC2Ev")
 
         if fn_name == "_ZNK2at6Tensor7reshapeEN3c108ArrayRefIlEE":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor7reshapeEN3c108ArrayRefIlEE")
+            original_tensor = self.build_expr(ops[0])
+            new_size = self.build_expr(ops[1])
+            return update_tensor_options_sizes(bm, original_tensor, new_size)
 
         if fn_name == "_ZNKRSt8optionalIN2at6TensorEE5valueEv":
             raise NotImplementedError(f"Unhandled call: _ZNKRSt8optionalIN2at6TensorEE5valueEv")
@@ -3102,6 +3103,11 @@ class SolverBuilder:
             cond = step.get("condition")
             if cond is None:
                 continue
+
+            if cond['inst'] == "call":
+                if cond['ops'][0]['const'] == "_ZNK3c106detail16integer_iteratorIlLb0ELi0EEneERKS2_":
+                    continue
+
             expr = self.mapper.build_expr(cond)
 
             # Handle switch
@@ -3174,4 +3180,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native8add_reluERKNS_6TensorERKN3c106ScalarES7_.json")
+        main("extracted_smt/_ZN2at6native7cauchy_ERNS_6TensorEddSt8optionalINS_9GeneratorEE.json")
