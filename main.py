@@ -599,14 +599,13 @@ class FunctionMapper:
             )
 
         if fn_name == "_ZNK3c1013TensorOptions13pinned_memoryESt8optionalIbE":
-            raise NotImplementedError(f"Unhandled call: _ZNK3c1013TensorOptions13pinned_memoryESt8optionalIbE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNK3c1013TensorOptions6deviceESt8optionalINS_6DeviceEE":
-            raise NotImplementedError(f"Unhandled call: _ZNK3c1013TensorOptions6deviceESt8optionalINS_6DeviceEE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZSteqIcSt11char_traitsIcEEbSt17basic_string_viewIT_T0_ENSt15__type_identityIS5_E4typeE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZSteqIcSt11char_traitsIcEEbSt17basic_string_viewIT_T0_ENSt15__type_identityIS5_E4typeE")
+            return self.build_expr(ops[0]) == self.build_expr(ops[1])
 
         if fn_name == "_ZN3c107canCastENS_10ScalarTypeES0_":
             return BoolVal(True)
@@ -774,8 +773,9 @@ class FunctionMapper:
             return update_tensor_options_sizes(bm, original_tensor, updated_size)
 
         if fn_name == "_ZNSt8optionalIN3c1010ScalarTypeEEC2IRS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES6_IS7_ISt10in_place_tSE_EESt16is_constructibleIS1_JSA_EESt14is_convertibleISA_S1_EEEbE4typeELb1EEEOSA_":
-            raise NotImplementedError(
-                f"Unhandled call: _ZNSt8optionalIN3c1010ScalarTypeEEC2IRS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES6_IS7_ISt10in_place_tSE_EESt16is_constructibleIS1_JSA_EESt14is_convertibleISA_S1_EEEbE4typeELb1EEEOSA_")
+            seq_expr = Empty(SeqSort(IntSort()))
+            seq_expr = Concat(seq_expr, Unit(self.build_expr(ops[0])))
+            return seq_expr
 
         if fn_name == "_ZNSt8optionalIN3c1012MemoryFormatEEC2IS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES5_IS6_ISt10in_place_tSD_EESt16is_constructibleIS1_JS9_EESt14is_convertibleIS9_S1_EEEbE4typeELb1EEEOS9_":
             raise NotImplementedError(
@@ -845,17 +845,17 @@ class FunctionMapper:
                 f"Unhandled call: _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2IS3_EEPKcRKS3_")
 
         if fn_name == "_ZN2at6native21wrapped_scalar_tensorERKN3c106ScalarENS1_6DeviceE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native21wrapped_scalar_tensorERKN3c106ScalarENS1_6DeviceE")
+            scalarType = bm.ScalarStruct.dtype(self.build_expr(ops[0]))
+            return bm.TensorStruct.tensor_structure(Empty(SeqSort(IntSort())), scalarType)
 
         if fn_name == "_ZNK3c106Device4typeEv":
             return IntVal(0)
 
         if fn_name == "llvm.memmove.p0.p0.i64":
-            raise NotImplementedError(f"Unhandled call: llvm.memmove.p0.p0.i64")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase7stridesEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase7stridesEv")
+            return bm.TensorStruct.sizes(self.build_expr(ops[0]))
 
         if fn_name == "_ZNKRSt8optionalIN2at6TensorEE8value_orIS1_EES1_OT_":
             raise NotImplementedError(f"Unhandled call: _ZNKRSt8optionalIN2at6TensorEE8value_orIS1_EES1_OT_")
@@ -996,8 +996,7 @@ class FunctionMapper:
                 f"Unhandled call: _ZNKSt8optionalISt17basic_string_viewIcSt11char_traitsIcEEE9has_valueEv")
 
         if fn_name == "_ZN2at6native19shape_from_dim_maskERKNS_6TensorESt6bitsetILm64EEb":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native19shape_from_dim_maskERKNS_6TensorESt6bitsetILm64EEb")
+            return bm.TensorStruct.sizes(self.build_expr(ops[0]))
 
         if fn_name == "_ZN2at11result_typeERKNS_6TensorES2_":
             raise NotImplementedError(f"Unhandled call: _ZN2at11result_typeERKNS_6TensorES2_")
@@ -1141,7 +1140,12 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor4_nnzEv")
 
         if fn_name == "_ZNK2at18TensorIteratorBase9is_scalarEl":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at18TensorIteratorBase9is_scalarEl")
+            #todo: wrong implementation
+            return bm.TensorStruct.dtype(self.build_expr(ops[0])[0]) == 1
+
+        if fn_name == "_ZNK2at18TensorIteratorBase8data_ptrEl":
+            return IntVal(1)
+
 
         if fn_name == "_ZNSt8optionalIN2at6TensorEEC2IRKS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES7_IS8_ISt10in_place_tSF_EESt16is_constructibleIS1_JSB_EESt14is_convertibleISB_S1_EEEbE4typeELb1EEEOSB_":
             raise NotImplementedError(
@@ -2907,12 +2911,11 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor4sortElb")
 
         if fn_name == "_ZN2at6native23create_reduction_resultERKNS_6TensorEN3c1016OptionalArrayRefIlEEbNS4_10ScalarTypeE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native23create_reduction_resultERKNS_6TensorEN3c1016OptionalArrayRefIlEEbNS4_10ScalarTypeE")
+            # todo: wrong implementation
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZN2at6native19get_dtype_from_selfERKNS_6TensorERKSt8optionalIN3c1010ScalarTypeEEb":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native19get_dtype_from_selfERKNS_6TensorERKSt8optionalIN3c1010ScalarTypeEEb")
+            return bm.TensorStruct.dtype(self.build_expr(ops[0]))
 
         if fn_name == "_ZN2at6native12_GLOBAL__N_118quantized_cat_implILb0EEENS_6TensorEN3c108IListRefIS3_EEldl":
             raise NotImplementedError(
@@ -3275,4 +3278,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native8choleskyERKNS_6TensorEb.json")
+        main("extracted_smt/_ZN2at6native36structured_upsample_linear1d_out_cpu4implERKNS_6TensorEN3c108ArrayRefIlEEbSt8optionalIdES4_.json")
