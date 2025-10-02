@@ -154,7 +154,7 @@ def normalize_llvm_type(ty: str) -> str:
     # ---- Tensor-like ----
     if ty.startswith("at::Tensor"):
         return "Tensor"
-    if ty.startswith("std::optional<at::Tensor") or ty.startswith("c10::optional<at::Tensor"):
+    if ty.startswith("std::optional<at::Tensor") or ty.startswith("c10::optional<at::Tensor") or ty.startswith("at::OptionalTensorRef"):
         return "Tensor?"
 
     # ---- Array of Tensors ----
@@ -162,6 +162,8 @@ def normalize_llvm_type(ty: str) -> str:
         return "Tensor[]"
     if re.match(r"std::optional<c10::ArrayRef<\s*at::Tensor\s*>>", ty):
         return "Tensor[]?"
+    if re.match(r"c10::IListRef<at::Tensor", ty):
+        return "Tensor[]"
 
     # ---- Scalar ----
     if "Scalar" in ty and "Tensor" not in ty:
@@ -191,6 +193,9 @@ def normalize_llvm_type(ty: str) -> str:
     if ty.startswith("std::array<bool,"):
         return "int[]"
 
+    if ty.startswith("std::optional<c10::ArrayRef<double"):
+        return "float[]?"
+
     # ---- Optional primitives ----
     if ty.startswith("c10::optional<int") or ty.startswith("std::optional<int"):
         return "int?"
@@ -206,6 +211,8 @@ def normalize_llvm_type(ty: str) -> str:
         return "int?"
     if ty.startswith("std::optional<c10::Device"):
         return "str?"
+
+
 
     if ty.startswith("std::basic_string_view<char,"):
         return "str"
@@ -227,6 +234,9 @@ def normalize_llvm_type(ty: str) -> str:
     #     return "Device"
     # if "at::ScalarType" in ty:
     #     return "ScalarType"
+
+    if ty.startswith("c10::MemoryFormat"):
+        return "int"
 
     # ---- Default fallback ----
     # return ty
