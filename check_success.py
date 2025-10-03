@@ -12,6 +12,7 @@ def run_file(file):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            timeout=15
         )
         return file, result.returncode, result.stdout, result.stderr
     except Exception as e:

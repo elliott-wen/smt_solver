@@ -154,6 +154,8 @@ class TensorModel:
                 self._arg_tensors[idx] = Const(f"optional_tensor_arg_{idx}", SeqSort(self.TensorStruct))
             elif arg_info == "str":
                 self._arg_tensors[idx] = Const(f"str_arg_{idx}", StringSort())
+            elif arg_info == "str?":
+                self._arg_tensors[idx] = Const(f"optional_str_arg_{idx}", SeqSort(StringSort()))
             else:
                 raise ValueError(f"Unhandled argument type {arg_info}")
         return self._arg_tensors[idx]
@@ -609,7 +611,6 @@ class FunctionMapper:
             bm.add_constraint(ForAll(i, Implies(And(i >= 0, i < length), seq[i] == start_num + i)))
             return seq
 
-
         if fn_name == "_ZNK3c1013integer_rangeIiLb1ELb1EE3endEv":
             raise NotImplementedError(f"Unhandled call: _ZNK3c1013integer_rangeIiLb1ELb1EE3endEv")
 
@@ -849,7 +850,7 @@ class FunctionMapper:
             return result
 
         if fn_name == "_ZN3c106ScalarC2Ei":
-            #very wrong
+            # very wrong
             return bm.ScalarStruct.scalar_structure(4)
 
         if fn_name == "_ZNR2at6TensoraSERKS0_":
@@ -930,7 +931,7 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNK2at10TensorBase12is_quantizedEv":
-            raise NotImplementedError(f"Unhandled call: _ZNK2at10TensorBase12is_quantizedEv")
+            return BoolVal(False)
 
         if fn_name == "_ZNK2at6native16NestedTensorImpl18get_nested_stridesEv":
             raise NotImplementedError(f"Unhandled call: _ZNK2at6native16NestedTensorImpl18get_nested_stridesEv")
@@ -1012,7 +1013,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNK3c1013TensorOptions17has_memory_formatEv")
 
         if fn_name == "_ZN2at6nativeL13is_contiguousERKNS_6TensorE":
-            raise NotImplementedError(f"Unhandled call: _ZN2at6nativeL13is_contiguousERKNS_6TensorE")
+            return BoolVal(True)
 
         if fn_name == "_ZSteqIllENSt9enable_ifIXsr14is_convertibleIDTeqclsr3stdE7declvalIRKT_EEclsr3stdE7declvalIRKT0_EEEbEE5valueEbE4typeERKSt8optionalIS1_ES6_":
             raise NotImplementedError(
@@ -1223,19 +1224,19 @@ class FunctionMapper:
         if fn_name == "_ZN2at6native21get_dtype_from_resultERNS_6TensorESt8optionalIN3c1010ScalarTypeEE":
             result_param = self.build_expr(ops[0])
             dtype_optional = self.build_expr(ops[1])
-            # if length of dtype_optional is 1, return dtype_optional[0], otherwise, return bm.TensorStruct.dtype(result_param)
-
-            optional_has_value = Length(dtype_optional) == 1
-
-            return If(
-                optional_has_value,
-                dtype_optional[0],
-                bm.TensorStruct.dtype(result_param)
-            )
+            return bm.TensorStruct.dtype(result_param)
+            # # if length of dtype_optional is 1, return dtype_optional[0], otherwise, return bm.TensorStruct.dtype(result_param)
+            #
+            # optional_has_value = Length(dtype_optional) == 1
+            #
+            # return If(
+            #     optional_has_value,
+            #     dtype_optional[0],
+            #     bm.TensorStruct.dtype(result_param)
+            # )
 
         if fn_name == "_ZN2at6native13is_mixed_typeIJNS_6TensorES2_S2_S2_EEEbRKS2_DpRKT_":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native13is_mixed_typeIJNS_6TensorES2_S2_S2_EEEbRKS2_DpRKT_")
+            return BoolVal(False)
 
         if fn_name == "_ZNK2at6Tensor8coalesceEv":
             raise NotImplementedError(f"Unhandled call: _ZNK2at6Tensor8coalesceEv")
@@ -1316,8 +1317,7 @@ class FunctionMapper:
             return self.build_expr(ops[0])
 
         if fn_name == "_ZNKSt8optionalISt17basic_string_viewIcSt11char_traitsIcEEEcvbEv":
-            raise NotImplementedError(
-                f"Unhandled call: _ZNKSt8optionalISt17basic_string_viewIcSt11char_traitsIcEEEcvbEv")
+            return Length(self.build_expr(ops[0])) > 0
 
         if fn_name == "_ZNKRSt8optionalISt17basic_string_viewIcSt11char_traitsIcEEEdeEv":
             raise NotImplementedError(
@@ -1446,7 +1446,7 @@ class FunctionMapper:
             return seq_expr
 
         if fn_name == "_ZN3c1020typeMetaToScalarTypeEN6caffe28TypeMetaE":
-            raise NotImplementedError(f"Unhandled call: _ZN3c1020typeMetaToScalarTypeEN6caffe28TypeMetaE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNSt6vectorIlSaIlEE5beginEv":
             raise NotImplementedError(f"Unhandled call: _ZNSt6vectorIlSaIlEE5beginEv")
@@ -1480,7 +1480,7 @@ class FunctionMapper:
                 f"Unhandled call: _ZNK3c1013TensorOptions19merge_memory_formatESt8optionalINS_12MemoryFormatEE")
 
         if fn_name == "_ZN2at6native27thnn_conv_use_channels_lastERKNS_6TensorES3_":
-            raise NotImplementedError(f"Unhandled call: _ZN2at6native27thnn_conv_use_channels_lastERKNS_6TensorES3_")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZN3c10neIlEEbNS_8ArrayRefIT_EES3_":
             return self.build_expr(ops[0]) != self.build_expr(ops[1])
@@ -1657,8 +1657,7 @@ class FunctionMapper:
                 f"Unhandled call: _ZNSt8optionalIN2at6TensorEEC2IRS1_TnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES6_IS7_ISt10in_place_tSE_EESt16is_constructibleIS1_JSA_EESt14is_convertibleISA_S1_EEEbE4typeELb1EEEOSA_")
 
         if fn_name == "_ZN2at4meanERKNS_6TensorEN3c1016OptionalArrayRefIlEEbSt8optionalINS3_10ScalarTypeEE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at4meanERKNS_6TensorEN3c1016OptionalArrayRefIlEEbSt8optionalINS3_10ScalarTypeEE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNKSt17reference_wrapperIKN2at6TensorEE3getEv":
             return self.build_expr(ops[0])
@@ -1737,8 +1736,7 @@ class FunctionMapper:
             return sliced_arr
 
         if fn_name == "_ZN2at6native12_GLOBAL__N_114view_weight_2dERKNS_6TensorEN3c1012MemoryFormatE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native12_GLOBAL__N_114view_weight_2dERKNS_6TensorEN3c1012MemoryFormatE")
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZNKSt8optionalIlEcvbEv":
             return Length(self.build_expr(ops[0])) > 0
@@ -1962,8 +1960,7 @@ class FunctionMapper:
                 f"Unhandled call: _ZNSt8optionalIN3c106DeviceEEC2IRKNS0_10DeviceTypeETnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS2_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES8_IS9_ISt10in_place_tSG_EESt16is_constructibleIS1_JSC_EESt14is_convertibleISC_S1_EEEbE4typeELb1EEEOSC_")
 
         if fn_name == "_ZN2at6native26searchsorted_scalar_tensorERKN3c106ScalarERKNS1_6DeviceE":
-            raise NotImplementedError(
-                f"Unhandled call: _ZN2at6native26searchsorted_scalar_tensorERKN3c106ScalarERKNS1_6DeviceE")
+            return empty_like_tensor(bm, Empty(SeqSort(IntSort())), bm.ScalarStruct.dtype(self.build_expr(ops[0])))
 
         if fn_name == "_ZN3c1012promoteTypesENS_10ScalarTypeES0_":
             raise NotImplementedError(f"Unhandled call: _ZN3c1012promoteTypesENS_10ScalarTypeES0_")
@@ -2230,8 +2227,10 @@ class FunctionMapper:
             return IntVal(4294967296)
 
         if fn_name == "_ZNSt8optionalIlEC2IRlTnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS0_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES4_IS5_ISt10in_place_tSC_EESt16is_constructibleIlJS8_EESt14is_convertibleIS8_lEEEbE4typeELb1EEEOS8_":
-            raise NotImplementedError(
-                f"Unhandled call: _ZNSt8optionalIlEC2IRlTnNSt9enable_ifIX7__and_vISt6__not_ISt7is_sameIS0_NSt9remove_cvINSt16remove_referenceIT_E4typeEE4typeEEES4_IS5_ISt10in_place_tSC_EESt16is_constructibleIlJS8_EESt14is_convertibleIS8_lEEEbE4typeELb1EEEOS8_")
+            seq_expr = Empty(SeqSort(IntSort()))
+            input_param = self.build_expr(ops[0])
+            seq_expr = Concat(seq_expr, Unit(input_param))
+            return seq_expr
 
         if fn_name == "_ZN2at6native17borrow_else_cloneEbRKNS_6TensorES3_b":
             seq_expr = Empty(SeqSort(bm.TensorStruct))
@@ -2385,7 +2384,6 @@ class FunctionMapper:
             seq_expr = Concat(seq_expr, Unit(output_tensor))
             seq_expr = Concat(seq_expr, Unit(input_tensor))
             return seq_expr
-
 
         if fn_name == "_ZNKRSt8optionalIN3c106LayoutEE8value_orIRKS1_EES1_OT_":
             raise NotImplementedError(f"Unhandled call: _ZNKRSt8optionalIN3c106LayoutEE8value_orIRKS1_EES1_OT_")
@@ -2897,7 +2895,7 @@ class FunctionMapper:
             raise NotImplementedError(f"Unhandled call: _ZNKRSt8optionalIN3c1012MemoryFormatEE8value_orIS1_EES1_OT_")
 
         if fn_name == "_ZZN2at6native28structured_index_add_cpu_out4implERKNS_6TensorElS4_S4_RKN3c106ScalarES4_ENK3$_0clENS5_8ArrayRefIlEESB_l":
-            return  self.build_expr(ops[0])
+            return self.build_expr(ops[0])
 
         if fn_name == "_ZN3c1010MaybeOwnedIN2at6TensorEE5ownedEOS2_":
             return self.build_expr(ops[0])
@@ -3402,7 +3400,7 @@ class FunctionMapper:
             return z3.If(num1 >= num2, num1, num2)
 
         if fn_name == "_ZN2at6native10batchCountERKNS_6TensorE":
-            tensor_size = bm.TensorStruct.sizes(self.build_expr(ops[0])) # Seqsort(intsort())
+            tensor_size = bm.TensorStruct.sizes(self.build_expr(ops[0]))  # Seqsort(intsort())
             rank = z3.Length(tensor_size)
 
             # batchCount = max(rank - 2, 0)
@@ -3472,6 +3470,30 @@ class FunctionMapper:
         if fn_name == "_ZNK2at6Tensor4itemIdEET_v":
             return IntVal(1)
 
+        if fn_name == "_ZNSt14numeric_limitsIN3c104HalfEE6lowestEv":
+            return RealVal(0)
+
+        if fn_name == "_ZNSt14numeric_limitsIN3c104HalfEE3maxEv":
+            return RealVal(128)
+
+        if fn_name == "_ZNSt14numeric_limitsIN3c108BFloat16EE6lowestEv":
+            return RealVal(0)
+
+        if fn_name == "_ZNSt14numeric_limitsIN3c108BFloat16EE3maxEv":
+            return RealVal(128)
+
+        if fn_name == "_ZNSt14numeric_limitsIlE6lowestEv":
+            return IntVal(0)
+
+        if fn_name == "_ZN2at6native9templates11update_fromIdEEll" or fn_name == "_ZN2at6native9templates11update_fromIfEEll" or fn_name == "_ZN2at6native9templates11update_fromIN3c104HalfEEEll" or fn_name == "_ZN2at6native9templates11update_fromIN3c108BFloat16EEEll":
+            return self.build_expr(ops[0])
+
+        if fn_name == "_ZN2at6native9templates9update_toIdEEll" or fn_name == "_ZN2at6native9templates9update_toIfEEll" or fn_name == "_ZN2at6native9templates9update_toIN3c104HalfEEEll" or fn_name == "_ZN2at6native9templates9update_toIN3c108BFloat16EEEll":
+            return self.build_expr(ops[0])
+
+        if "_ZL7div_rtnIlET_S0_S0_" in fn_name:
+            return IntVal(2)
+
         raise NotImplementedError(f"Unhandled call: {fn_name}")
 
     # Recursive expression builder
@@ -3517,6 +3539,8 @@ class FunctionMapper:
 
         if inst == "select":
             cond, tval, fval = map(self.build_expr, ops)
+            if not isinstance(cond, BoolRef):
+                return If(cond != 0, tval, fval)
             return If(cond, tval, fval)
         if inst in ("add", "fadd"):
             print(ops[0])
@@ -3631,7 +3655,8 @@ class SolverBuilder:
                         "_ZNK3c106detail16integer_iteratorImLb1ELi0EEneERKS2_",
                         "_ZSteqIcSt11char_traitsIcEEbSt17basic_string_viewIT_T0_ENSt15__type_identityIS5_E4typeE",
                         "_ZN9__gnu_cxxneIPKSt17reference_wrapperIKN2at6TensorEESt6vectorIS5_SaIS5_EEEEbRKNS_17__normal_iteratorIT_T0_EESG_",
-                        "_ZN9__gnu_cxxneIPSt17reference_wrapperIKN2at6TensorEESt6vectorIS5_SaIS5_EEEEbRKNS_17__normal_iteratorIT_T0_EESF_", "_ZN9__gnu_cxxneIPN2at6TensorESt6vectorIS2_SaIS2_EEEEbRKNS_17__normal_iteratorIT_T0_EESC_"):
+                        "_ZN9__gnu_cxxneIPSt17reference_wrapperIKN2at6TensorEESt6vectorIS5_SaIS5_EEEEbRKNS_17__normal_iteratorIT_T0_EESF_",
+                        "_ZN9__gnu_cxxneIPN2at6TensorESt6vectorIS2_SaIS2_EEEEbRKNS_17__normal_iteratorIT_T0_EESC_"):
                     continue
 
             if not self.contains_const_arg(cond):
@@ -3709,4 +3734,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main("extracted_smt/_ZN2at6native16kthvalue_out_cpuERKNS_6TensorEllbRS1_S4_.json")
+        main("extracted_smt/_ZN2at6native30_batch_norm_legit_no_stats_cpuERKNS_6TensorERKSt8optionalIS1_ES7_bdd.json")
